@@ -1,4 +1,4 @@
-﻿using Aura.Application.Interfaces;
+using Aura.Application.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace Aura.Infrastructure.Services;

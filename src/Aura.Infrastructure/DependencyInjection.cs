@@ -1,4 +1,4 @@
-﻿using Aura.Application.Interfaces;
+using Aura.Application.Interfaces;
 using Aura.Domain.Interfaces;
 using Aura.Infrastructure.Data;
 using Aura.Infrastructure.Repositories;
@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPackageRepository, PackageRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
 
         // ===== Services =====
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -53,6 +54,10 @@ public static class DependencyInjection
         services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>(); // ← THÊM
         services.AddScoped<IPackageService, PackageService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IPhotographerService, PhotographerService>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IStatisticsService, StatisticsService>();
 
         // ===== JWT Authentication =====
         var jwtSettings = configuration.GetSection("JwtSettings");

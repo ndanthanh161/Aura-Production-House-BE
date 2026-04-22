@@ -1,9 +1,18 @@
-﻿namespace Aura.Domain.Interfaces;
+using Aura.Domain.Entity;
 
-public interface IUserRepository
+namespace Aura.Domain.Interfaces
 {
-    Task<Entity.User?> GetByEmailAsync(string email);
-    Task<Entity.User?> GetByIdAsync(Guid id);
-    Task<bool> ExistsByEmailAsync(string email);
-    Task<Entity.User> CreateAsync(Entity.User user);
+    public interface IUserRepository
+    {
+        Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByIdAsync(Guid id);
+        Task<bool> ExistsByEmailAsync(string email);
+        Task<User> CreateAsync(User user);
+
+        /// <summary>Lấy tất cả user theo tên role (Admin, Staff, User)</summary>
+        Task<IEnumerable<User>> GetAllByRoleAsync(string roleName);
+
+        /// <summary>Cập nhật thông tin user</summary>
+        Task<User> UpdateAsync(User user);
+    }
 }

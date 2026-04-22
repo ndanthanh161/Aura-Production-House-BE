@@ -1,4 +1,4 @@
-﻿using Aura.Domain.Entity;
+using Aura.Domain.Entity;
 using Aura.Domain.Interfaces;
 using Aura.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -37,8 +37,22 @@ public class UserRepository : IUserRepository
     {
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+        return (await GetByIdAsync(user.Id))!;
+    }
 
-        // Reload with Role included
+    public async Task<IEnumerable<User>> GetAllByRoleAsync(string roleName)
+    {
+        return await _context.Users
+            .Include(u => u.Role)
+            .Where(u => u.Role.Name == roleName)
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+    }
+
+    public async Task<User> UpdateAsync(User user)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
         return (await GetByIdAsync(user.Id))!;
     }
 }

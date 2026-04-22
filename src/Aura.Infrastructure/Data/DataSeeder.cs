@@ -1,4 +1,4 @@
-﻿using Aura.Domain.Entity;
+using Aura.Domain.Entity;
 using Aura.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +40,14 @@ public static class DataSeeder
                     Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                     Name = "User",
                     Description = "Regular customer",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Role
+                {
+                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    Name = "Photographer",
+                    Description = "Capture moments",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 }

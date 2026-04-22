@@ -1,6 +1,7 @@
-﻿using Aura.Application.Common; // Thêm namespace này
+using Aura.Application.Common; // Thêm namespace này
 using Aura.Application.DTOs.Package;
 using Aura.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.API.Controllers
@@ -17,6 +18,7 @@ namespace Aura.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<PackageResponseDTO>>> CreatePackage([FromBody] CreatePackageRequestDTO request)
         {
             var newPackage = await _packageService.CreatePackageAsync(request);
@@ -44,6 +46,7 @@ namespace Aura.API.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<PackageResponseDTO>>> UpdatePackage([FromBody] UpdatePackageRequestDTO request)
         {
             var updated = await _packageService.UpdatePackageAsync(request);
@@ -56,6 +59,7 @@ namespace Aura.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<string>>> DeletePackage(Guid id)
         {
             var result = await _packageService.DeletePackageAsync(id);
