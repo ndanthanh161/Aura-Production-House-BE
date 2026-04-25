@@ -1,4 +1,4 @@
-﻿namespace Aura.Domain.Entity
+namespace Aura.Domain.Entity
 {
     public class Package
     {
@@ -6,7 +6,13 @@
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public string? Description { get; set; }
-        public string Features { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Danh sách lợi ích chi tiết mà customer nhận được khi mua package này.
+        /// Được serialize thành JSON column trong DB.
+        /// </summary>
+        public List<string> Benefits { get; set; } = new List<string>();
+
         public bool IsPopular { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }

@@ -1,4 +1,4 @@
-﻿using Aura.Domain.Enum;
+using Aura.Domain.Enum;
 
 namespace Aura.Domain.Entity
 {
@@ -11,8 +11,16 @@ namespace Aura.Domain.Entity
         public Guid PackageId { get; set; }
         public ProjectStatus Status { get; set; }
         public decimal Revenue { get; set; }
+        public decimal Deposit { get; set; } // Tiền cọc
         public DateTime Deadline { get; set; }
         public string? Description { get; set; }
+
+        /// <summary>
+        /// Snapshot danh sách lợi ích tại thời điểm customer mua package.
+        /// Không bị ảnh hưởng nếu Package sau này bị cập nhật hay xóa.
+        /// </summary>
+        public List<string> Benefits { get; set; } = new List<string>();
+
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public User Client { get; set; } = null!;
@@ -22,3 +30,4 @@ namespace Aura.Domain.Entity
         public ICollection<PortfolioItem> PortfolioItems { get; set; } = new List<PortfolioItem>();
     }
 }
+

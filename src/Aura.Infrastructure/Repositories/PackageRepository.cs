@@ -1,4 +1,4 @@
-﻿using Aura.Domain.Entity;
+using Aura.Domain.Entity;
 using Aura.Domain.Interfaces;
 using Aura.Infrastructure.Data; // Thay bằng namespace DbContext của bạn
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +34,9 @@ namespace Aura.Infrastructure.Repositories
             {
                 query = query.Where(p => p.IsActive);
             }
+
+            // Luôn sắp xếp theo giá tăng dần, bất kể filter
+            query = query.OrderBy(x => x.Price);
 
             return await query.ToListAsync();
         }

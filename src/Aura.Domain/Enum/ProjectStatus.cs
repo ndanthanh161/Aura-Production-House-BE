@@ -1,11 +1,10 @@
-﻿namespace Aura.Domain.Enum
+namespace Aura.Domain.Enum
 {
     public enum ProjectStatus
     {
-        PreProduction = 0,
-        InProduction = 1,
-        Scheduled = 2,
-        Completed = 3,
-        Cancelled = 4
+        InProduction = 0,
+        Scheduled = 1,
+        Completed = 2,
+        Cancelled = 3
     }
 }

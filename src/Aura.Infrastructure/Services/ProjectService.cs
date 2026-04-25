@@ -1,4 +1,4 @@
-﻿using Aura.Application.DTOs.Project;
+using Aura.Application.DTOs.Project;
 using Aura.Application.Interfaces;
 using Aura.Domain.Entity;
 using Aura.Domain.Enum;
@@ -34,8 +34,12 @@ namespace Aura.Infrastructure.Services
 
                 // Gán giá Revenue của Project dựa theo giá chuẩn Menu (Price) của Package
                 Revenue = package.Price,
+                Deposit = request.Deposit, // Gán tiền cọc thực tế khách hàng đã thanh toán
 
-                Status = ProjectStatus.PreProduction, // Chờ thanh toán
+                // Tự động snapshot toàn bộ Benefits từ Package → không cần Customer nhập thủ công
+                Benefits = new List<string>(package.Benefits),
+
+                Status = ProjectStatus.InProduction, // Đang thực hiện (sau khi thanh toán)
                 Deadline = DateTime.UtcNow.AddDays(7), // Mặc định deadline 7 ngày
                 Description = request.Description,
                 CreatedAt = DateTime.UtcNow,
@@ -67,9 +71,11 @@ namespace Aura.Infrastructure.Services
             project.StaffId = request.StaffId;
             project.Status = request.Status;
             project.Revenue = request.Revenue; // Update lại Doanh thu thực tế nếu phát sinh
+            project.Deposit = request.Deposit; // Update tiền cọc
             project.Deadline = request.Deadline;
             project.Description = request.Description;
             project.UpdatedAt = DateTime.UtcNow;
+            // Lưu ý: KHÔNG update Benefits ở đây vì đây là snapshot đã cam kết với customer
 
             var updatedProject = await _projectRepository.UpdateAsync(project);
             return MapToDTO(updatedProject);
@@ -80,6 +86,46 @@ namespace Aura.Infrastructure.Services
             return await _projectRepository.UpdateStatusAsync(id, status);
         }
 
+        public async Task<bool> UpdateProjectStaffAsync(Guid id, Guid staffId)
+        {
+            return await _projectRepository.UpdateStaffAsync(id, staffId);
+        }
+
+        public async Task<IEnumerable<ProjectResponseDTO>> GetSchedulesAsync(Guid? clientId, Guid? staffId, DateTime? from, DateTime? to)
+        {
+            var projects = await _projectRepository.GetSchedulesAsync(clientId, staffId, from, to);
+            return projects.Select(MapToDTO);
+        }
+
+        public async Task<SlotAvailabilityResponseDTO> CheckSlotAvailabilityAsync(DateTime date, int maxSlotsPerDay = 3)
+        {
+            var booked = (await _projectRepository.GetBookedOnDateAsync(date)).ToList();
+
+            return new SlotAvailabilityResponseDTO
+            {
+                Date = date.Date,
+                BookedCount = booked.Count,
+                IsAvailable = booked.Count < maxSlotsPerDay,
+                BookedProjectIds = booked.Select(p => p.Id)
+            };
+        }
+
+        public async Task<ProjectResponseDTO?> RescheduleAsync(RescheduleRequestDTO request)
+        {
+            if (request.NewShootingDate.ToUniversalTime() < DateTime.UtcNow)
+                throw new ArgumentException("Ngày chụp mới không được trong quá khứ.");
+
+            var updated = await _projectRepository.RescheduleAsync(
+                request.ProjectId, request.NewShootingDate.ToUniversalTime());
+
+            return updated == null ? null : MapToDTO(updated);
+        }
+
+        public async Task<bool> CancelProjectAsync(Guid projectId)
+        {
+            return await _projectRepository.CancelAsync(projectId);
+        }
+
         private ProjectResponseDTO MapToDTO(Project project)
         {
             return new ProjectResponseDTO
@@ -87,10 +133,15 @@ namespace Aura.Infrastructure.Services
                 Id = project.Id,
                 Name = project.Name,
                 ClientId = project.ClientId,
+                ClientName = project.Client?.FullName ?? string.Empty,
                 PackageId = project.PackageId,
+                PackageName = project.Package?.Name ?? string.Empty,
+                Deposit = project.Deposit,
                 StaffId = project.StaffId == Guid.Empty ? null : project.StaffId,
+                StaffName = project.Staff?.FullName,
                 Status = project.Status,
                 Revenue = project.Revenue,
+                Benefits = project.Benefits,
                 Deadline = project.Deadline,
                 Description = project.Description,
                 CreatedAt = project.CreatedAt,

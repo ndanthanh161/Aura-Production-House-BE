@@ -1,14 +1,19 @@
-﻿using Aura.Application;
+using Aura.Application;
 using Aura.Infrastructure;
 using Infrastructure.Data;
 using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Swagger with JWT support
 builder.Services.AddEndpointsApiExplorer();

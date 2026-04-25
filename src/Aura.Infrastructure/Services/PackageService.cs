@@ -1,4 +1,4 @@
-﻿using Aura.Application.DTOs.Package;
+using Aura.Application.DTOs.Package;
 using Aura.Application.Interfaces;
 using Aura.Domain.Entity;
 using Aura.Domain.Interfaces;
@@ -22,7 +22,7 @@ namespace Aura.Infrastructure.Services
                 Name = request.Name,
                 Price = request.Price,
                 Description = request.Description,
-                Features = request.Features,
+                Benefits = request.Benefits, // Lưu danh sách lợi ích từ Staff/Admin
                 IsPopular = request.IsPopular,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
@@ -53,7 +53,7 @@ namespace Aura.Infrastructure.Services
             package.Name = request.Name;
             package.Price = request.Price;
             package.Description = request.Description;
-            package.Features = request.Features;
+            package.Benefits = request.Benefits; // Cập nhật danh sách lợi ích
             package.IsPopular = request.IsPopular;
             package.IsActive = request.IsActive; // Admin có quyền Set Active/Inactive
             package.UpdatedAt = DateTime.UtcNow;
@@ -76,7 +76,7 @@ namespace Aura.Infrastructure.Services
                 Name = package.Name,
                 Price = package.Price,
                 Description = package.Description,
-                Features = package.Features,
+                Benefits = package.Benefits, // Trả về danh sách lợi ích cho Frontend
                 IsPopular = package.IsPopular,
                 IsActive = package.IsActive,
                 CreatedAt = package.CreatedAt,
@@ -85,3 +85,4 @@ namespace Aura.Infrastructure.Services
         }
     }
 }
+

@@ -29,25 +29,17 @@ public static class DataSeeder
                 },
                 new Role
                 {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    Name = "Staff",
-                    Description = "Manage assigned projects",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-                new Role
-                {
                     Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                     Name = "User",
-                    Description = "Regular customer",
+                    Description = "Khách hàng sử dụng dịch vụ",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
                 new Role
                 {
-                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                     Name = "Photographer",
-                    Description = "Capture moments",
+                    Description = "Thợ chụp ảnh chuyên nghiệp",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 }
@@ -75,23 +67,24 @@ public static class DataSeeder
             await context.Users.AddAsync(admin);
         }
 
-        // ==================== Seed Staff ====================
-        if (!await context.Users.AnyAsync(u => u.Email == "staff@auraproduction.com"))
+        // ==================== Seed Photographer ====================
+        if (!await context.Users.AnyAsync(u => u.Email == "photo@auraproduction.com"))
         {
-            var staff = new User
+            var photographer = new User
             {
                 Id = Guid.NewGuid(),
-                FullName = "Marcus Valerius",
-                Email = "staff@auraproduction.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Staff@123"),
+                FullName = "Aura Photographer",
+                Email = "photo@auraproduction.com",
+                Password = BCrypt.Net.BCrypt.HashPassword("Photo@123"),
                 RoleId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Phone = "0909876543",
+                Phone = "0908888888",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await context.Users.AddAsync(staff);
+            await context.Users.AddAsync(photographer);
         }
+        await context.SaveChangesAsync();
 
         await context.SaveChangesAsync();
     }

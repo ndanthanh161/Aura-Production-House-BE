@@ -10,6 +10,9 @@ namespace Aura.Application.Interfaces
         /// <summary>Lấy chi tiết một photographer theo Id</summary>
         Task<UserResponseDTO?> GetPhotographerByIdAsync(Guid id);
 
+        /// <summary>Tạo mới một photographer (Admin only)</summary>
+        Task<UserResponseDTO> CreatePhotographerAsync(CreatePhotographerRequestDTO request);
+
         /// <summary>Cập nhật thông tin photographer</summary>
         Task<UserResponseDTO?> UpdatePhotographerAsync(UpdateUserRequestDTO request);
 

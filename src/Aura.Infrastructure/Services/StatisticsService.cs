@@ -48,8 +48,8 @@ namespace Aura.Infrastructure.Services
                 p.Status == ProjectStatus.Cancelled && p.UpdatedAt >= firstDayOfMonth);
 
             // Người dùng
-            var staffRoleId = await _context.Roles
-                .Where(r => r.Name == "Staff")
+            var photographerRoleId = await _context.Roles
+                .Where(r => r.Name == "Photographer")
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
@@ -58,7 +58,7 @@ namespace Aura.Infrastructure.Services
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
-            var totalStaff = await _context.Users.CountAsync(u => u.RoleId == staffRoleId);
+            var totalPhotographers = await _context.Users.CountAsync(u => u.RoleId == photographerRoleId);
             var totalCustomers = await _context.Users.CountAsync(u => u.RoleId == userRoleId);
             var newCustomersThisMonth = await _context.Users
                 .CountAsync(u => u.RoleId == userRoleId && u.CreatedAt >= firstDayOfMonth);
@@ -77,7 +77,7 @@ namespace Aura.Infrastructure.Services
                 RevenueThisMonth     = revenueThisMonth,
                 RevenueLastMonth     = revenueLastMonth,
                 TotalCustomers       = totalCustomers,
-                TotalStaff           = totalStaff,
+                TotalStaff           = totalPhotographers, // Giữ tên thuộc tính DTO nhưng gán giá trị photographer
                 NewCustomersThisMonth = newCustomersThisMonth,
                 TotalBookings        = projects.Count(p =>
                     p.Status == ProjectStatus.Scheduled || p.Status == ProjectStatus.InProduction),
@@ -117,33 +117,33 @@ namespace Aura.Infrastructure.Services
         // ─── 3. Hiệu suất photographer ─────────────────────────────────────
         public async Task<IEnumerable<StaffPerformanceDTO>> GetStaffPerformanceAsync()
         {
-            var staffRoleId = await _context.Roles
-                .Where(r => r.Name == "Staff")
+            var photographerRoleId = await _context.Roles
+                .Where(r => r.Name == "Photographer")
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
-            var staffUsers = await _context.Users
-                .Where(u => u.RoleId == staffRoleId)
+            var photographers = await _context.Users
+                .Where(u => u.RoleId == photographerRoleId)
                 .ToListAsync();
 
             var projects = await _context.Projects
                 .Where(p => p.StaffId != null)
                 .ToListAsync();
 
-            var result = staffUsers.Select(staff =>
+            var result = photographers.Select(ph =>
             {
-                var staffProjects = projects.Where(p => p.StaffId == staff.Id).ToList();
+                var phProjects = projects.Where(p => p.StaffId == ph.Id).ToList();
                 return new StaffPerformanceDTO
                 {
-                    StaffId      = staff.Id,
-                    StaffName    = staff.FullName,
-                    TotalAssigned = staffProjects.Count,
-                    Completed    = staffProjects.Count(p => p.Status == ProjectStatus.Completed),
-                    InProgress   = staffProjects.Count(p =>
+                    StaffId      = ph.Id,
+                    StaffName    = ph.FullName,
+                    TotalAssigned = phProjects.Count,
+                    Completed    = phProjects.Count(p => p.Status == ProjectStatus.Completed),
+                    InProgress   = phProjects.Count(p =>
                         p.Status == ProjectStatus.InProduction ||
                         p.Status == ProjectStatus.Scheduled),
-                    Cancelled    = staffProjects.Count(p => p.Status == ProjectStatus.Cancelled),
-                    TotalRevenue = staffProjects
+                    Cancelled    = phProjects.Count(p => p.Status == ProjectStatus.Cancelled),
+                    TotalRevenue = phProjects
                         .Where(p => p.Status == ProjectStatus.Completed)
                         .Sum(p => p.Revenue)
                 };

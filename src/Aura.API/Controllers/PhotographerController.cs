@@ -18,10 +18,28 @@ namespace Aura.API.Controllers
             _photographerService = photographerService;
         }
 
+        // POST api/v1/photographer
+        /// <summary>Tạo mới một photographer (Admin only)</summary>
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse<UserResponseDTO>>> Create(
+            [FromBody] CreatePhotographerRequestDTO request)
+        {
+            try
+            {
+                var created = await _photographerService.CreatePhotographerAsync(request);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id },
+                    ApiResponse<UserResponseDTO>.CreatedResponse(created, "Tao photographer thanh cong."));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<UserResponseDTO>.ErrorResponse(ex.Message));
+            }
+        }
+
         // GET api/v1/photographer
         /// <summary>Lấy danh sách tất cả photographer (Staff + Photographer role)</summary>
         [HttpGet]
-        [Authorize(Roles = "Admin,Staff,Photographer")]
+        [Authorize(Roles = "Admin,Photographer")]
         public async Task<ActionResult<ApiResponse<IEnumerable<UserResponseDTO>>>> GetAll()
         {
             var photographers = await _photographerService.GetAllPhotographersAsync();
@@ -32,7 +50,7 @@ namespace Aura.API.Controllers
         // GET api/v1/photographer/{id}
         /// <summary>Chi tiết một photographer</summary>
         [HttpGet("{id:guid}")]
-        [Authorize(Roles = "Admin,Staff,Photographer")]
+        [Authorize(Roles = "Admin,Photographer")]
         public async Task<ActionResult<ApiResponse<UserResponseDTO>>> GetById(Guid id)
         {
             var photographer = await _photographerService.GetPhotographerByIdAsync(id);

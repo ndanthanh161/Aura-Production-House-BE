@@ -8,7 +8,7 @@ namespace Aura.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin,Photographer")]
     public class StatisticsController : ControllerBase
     {
         private readonly IStatisticsService _statisticsService;

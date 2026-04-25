@@ -1,4 +1,6 @@
-﻿using Aura.Domain.Entity;
+using Aura.Domain.Entity;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aura.Infrastructure.Data;
@@ -51,7 +53,21 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
             entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
             entity.Property(p => p.Description).HasMaxLength(1000);
-            entity.Property(p => p.Features).IsRequired();
+
+            // Serialize List<string> Benefits thành JSON column
+            var listComparer = new ValueComparer<List<string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList()
+            );
+
+            entity.Property(p => p.Benefits)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
+                )
+                .HasColumnType("text")
+                .Metadata.SetValueComparer(listComparer);
         });
 
         // ==================== Project ====================
@@ -66,6 +82,21 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasConversion<string>()
                 .HasMaxLength(50);
+
+            // Snapshot Benefits từ Package tại thời điểm tạo Project, serialize thành JSON column
+            var projectListComparer = new ValueComparer<List<string>>(
+                (c1, c2) => c1!.SequenceEqual(c2!),
+                c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                c => c.ToList()
+            );
+
+            entity.Property(p => p.Benefits)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
+                )
+                .HasColumnType("text")
+                .Metadata.SetValueComparer(projectListComparer);
 
             entity.HasOne(p => p.Client)
                 .WithMany(u => u.ClientProjects)
