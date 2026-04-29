@@ -1,4 +1,4 @@
-﻿using Aura.Application.Common;
+using Aura.Application.Common;
 using Aura.Application.DTOs.Auth;
 using Aura.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -62,6 +62,24 @@ public class AuthController : ControllerBase
         }
 
         var result = await _authService.LoginAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    /// <summary>
+    /// Login with Google ID token
+    /// </summary>
+    [HttpPost("google-login")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return BadRequest(ApiResponse<AuthResponse>.ErrorResponse(
+                "Google ID token is required.", 400));
+        }
+
+        var result = await _authService.GoogleLoginAsync(request.IdToken);
         return StatusCode(result.StatusCode, result);
     }
 
