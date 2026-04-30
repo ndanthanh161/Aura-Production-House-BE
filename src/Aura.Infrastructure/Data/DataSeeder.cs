@@ -87,19 +87,73 @@ public static class DataSeeder
             await context.Users.AddAsync(photographer);
         }
         await context.SaveChangesAsync();
+        
+        // ==================== Seed Packages ====================
+        if (!await context.Packages.AnyAsync())
+        {
+            var packages = new List<Package>
+            {
+                new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Gói Khởi Đầu",
+                    Price = 2000000,
+                    Description = "Phù hợp cho cá nhân mới bắt đầu xây dựng hình ảnh.",
+                    Benefits = new List<string> { "Chụp 1 buổi", "Chỉnh sửa 10 ảnh", "1 video ngắn" },
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Gói Chuyên Nghiệp",
+                    Price = 5000000,
+                    Description = "Dành cho những người muốn làm thương hiệu cá nhân bài bản.",
+                    Benefits = new List<string> { "Chụp 2 buổi", "Chỉnh sửa 30 ảnh", "3 video ngắn", "Trang điểm chuyên nghiệp" },
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Gói Đột Phá",
+                    Price = 10000000,
+                    Description = "Giải pháp toàn diện để trở thành Tech Influencer.",
+                    Benefits = new List<string> { "Quản trị nội dung 1 tháng", "12 video TikTok/Reels", "Hỗ trợ kịch bản", "Chụp ảnh profile cao cấp" },
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            };
+            await context.Packages.AddRangeAsync(packages);
+            await context.SaveChangesAsync();
+        }
 
         // ==================== Seed AI Knowledge ====================
-        if (!await context.AuraKnowledge.AnyAsync())
+        // Logic thông minh: Kiểm tra từng Package, nếu chưa có trong AI Knowledge thì mới nạp
+        var currentPackages = await context.Packages.ToListAsync();
+        var existingKnowledge = await context.AuraKnowledge
+            .Where(k => k.Category == "Package")
+            .Select(k => k.Content)
+            .ToListAsync();
+
+        foreach (var pkg in currentPackages)
         {
-            var packages = await context.Packages.ToListAsync();
-            foreach (var pkg in packages)
+            var benefits = string.Join(", ", pkg.Benefits);
+            var content = $"Gói dịch vụ: {pkg.Name}. Giá: {pkg.Price:N0} VNĐ. Mô tả: {pkg.Description}. Quyền lợi: {benefits}.";
+            
+            // Nếu nội dung này chưa tồn tại trong bảng AI Knowledge thì mới nạp vào
+            if (!existingKnowledge.Any(k => k.Contains($"Gói dịch vụ: {pkg.Name}")))
             {
-                var benefits = string.Join(", ", pkg.Benefits);
-                var content = $"Gói dịch vụ: {pkg.Name}. Giá: {pkg.Price:N0} VNĐ. Mô tả: {pkg.Description}. Quyền lợi: {benefits}.";
                 await chatService.IngestKnowledgeAsync(content, "Package");
             }
+        }
 
-            // FAQ cơ bản
+        // Tương tự cho FAQ cơ bản
+        if (!await context.AuraKnowledge.AnyAsync(k => k.Category == "FAQ"))
+        {
             await chatService.IngestKnowledgeAsync("Aura Production House tọa lạc tại 123 Đường ABC, Quận 1, TP. Hồ Chí Minh.", "FAQ");
             await chatService.IngestKnowledgeAsync("Thời gian làm việc của Aura là từ 8:00 đến 21:00 tất cả các ngày trong tuần.", "FAQ");
             await chatService.IngestKnowledgeAsync("Để đặt lịch, khách hàng cần thanh toán đặt cọc 50% giá trị gói dịch vụ.", "FAQ");

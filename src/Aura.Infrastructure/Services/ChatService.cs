@@ -28,7 +28,7 @@ namespace Aura.Infrastructure.Services
             // 2. Search for relevant context in DB
             var relevantContext = await _context.AuraKnowledge
                 .OrderBy(k => k.Embedding.L2Distance(vector))
-                .Take(3)
+                .Take(8)
                 .Select(k => k.Content)
                 .ToListAsync();
 

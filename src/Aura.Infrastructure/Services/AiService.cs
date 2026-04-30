@@ -52,9 +52,10 @@ namespace Aura.Infrastructure.Services
 QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 1. TUYỆT ĐỐI KHÔNG dùng ký hiệu Markdown (không dùng **, không dùng #, không dùng [ ]).
 2. TRÌNH BÀY: Dùng 2 lần xuống dòng (double newline) giữa các ý để tạo khoảng cách thoáng. Dùng dấu gạch ngang (-) đơn giản.
-3. PHONG CÁCH: Trả lời cực kỳ ngắn gọn (dưới 60 từ), chuyên nghiệp và súc tích.
-4. CHIẾN THUẬT: Chọn ngay 1-2 gói phù hợp nhất với ngân sách khách đưa ra(ưu tiên các gói cao nhất với số tiền của khách đưa ra) và giải thích ngắn gọn lý do.
-5. KẾT THÚC: 1 câu kêu gọi liên hệ hỗ trợ AURA để được tư vấn chuyên sâu hơn(với phong cách chuyên nghiệp trong văn nói).
+3. PHONG CÁCH: Trả lời cực kỳ ngắn gọn (dưới 100 từ), chuyên nghiệp và súc tích.
+4. CHIẾN THUẬT: Chọn 1 gói sát nhất với ngân sách khách đưa ra (ưu tiên gói cao nhất trong tầm tiền) và giải thích ngắn gọn lý do.
+5. QUY TẮC QUYỀN LỢI: AI phải biết rằng các gói giá cao hơn luôn bao gồm toàn bộ quyền lợi của các gói thấp tiền hơn. Hãy dùng điều này để thuyết phục khách nâng cấp gói.
+6. KẾT THÚC: 1 câu kêu gọi liên hệ hỗ trợ AURA để được tư vấn chuyên sâu hơn.
 
 Kiến thức Aura:
 {context}";
