@@ -9,12 +9,20 @@ namespace Aura.Infrastructure.Services
     public class ProjectService : IProjectService
     {
         private readonly IProjectRepository _projectRepository;
-        private readonly IPackageRepository _packageRepository; // Gọi chéo Repo Package
+        private readonly IPackageRepository _packageRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IMailService _mailService;
 
-        public ProjectService(IProjectRepository projectRepository, IPackageRepository packageRepository)
+        public ProjectService(
+            IProjectRepository projectRepository, 
+            IPackageRepository packageRepository,
+            IUserRepository userRepository,
+            IMailService mailService)
         {
             _projectRepository = projectRepository;
             _packageRepository = packageRepository;
+            _userRepository = userRepository;
+            _mailService = mailService;
         }
 
         public async Task<ProjectResponseDTO> CreateProjectAsync(CreateProjectRequestDTO request)
@@ -47,6 +55,68 @@ namespace Aura.Infrastructure.Services
             };
 
             var createdProject = await _projectRepository.AddAsync(project);
+
+            // Send notification email
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(request.ClientId);
+                if (user != null && !string.IsNullOrEmpty(user.Email))
+                {
+                    string subject = $"[AURA] Xác nhận thanh toán gói dịch vụ: {package.Name}";
+                    string body = $@"
+                        <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
+                            <div style='border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;'>
+                                <h2 style='margin: 0; color: #000;'>AURA PRODUCTION HOUSE</h2>
+                            </div>
+                            
+                            <p>Kính gửi <strong>{user.FullName}</strong>,</p>
+                            
+                            <p>Chúng tôi xin thông báo đã nhận được khoản thanh toán của quý khách cho gói dịch vụ <strong>{package.Name}</strong>.</p>
+                            
+                            <div style='background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;'>
+                                <h4 style='margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;'>Thông tin đơn hàng</h4>
+                                <table style='width: 100%; border-collapse: collapse;'>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Tên dự án:</td>
+                                        <td style='padding: 8px 0;'><strong>{project.Name}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Gói dịch vụ:</td>
+                                        <td style='padding: 8px 0;'>{package.Name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Số tiền thanh toán:</td>
+                                        <td style='padding: 8px 0;'><strong>{project.Deposit:N0} VNĐ</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Thời gian:</td>
+                                        <td style='padding: 8px 0;'>{project.CreatedAt:dd/MM/yyyy HH:mm}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <p>Đội ngũ của AURA sẽ sớm liên hệ trực tiếp với quý khách để trao đổi chi tiết về kế hoạch sản xuất.</p>
+                            
+                            <p>Nếu quý khách có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua số điện thoại hỗ trợ hoặc phản hồi trực tiếp email này.</p>
+                            
+                            <p style='margin-top: 40px;'>Trân trọng,<br />
+                            <strong>Ban quản trị AURA</strong></p>
+                            
+                            <div style='margin-top: 50px; padding-top: 15px; border-top: 1px solid #eee; font-size: 11px; color: #999; text-align: center;'>
+                                Đây là email thông báo tự động. Vui lòng không trả lời trực tiếp email này.<br />
+                                © 2024 Aura Production House.
+                            </div>
+                        </div>";
+
+                    await _mailService.SendEmailAsync(user.Email, subject, body);
+                }
+            }
+            catch (Exception ex)
+            {
+                // We don't want to fail the whole project creation if email fails
+                Console.WriteLine($"Failed to send confirmation email: {ex.Message}");
+            }
+
             return MapToDTO(createdProject);
         }
 
@@ -74,6 +144,7 @@ namespace Aura.Infrastructure.Services
             project.Deposit = request.Deposit; // Update tiền cọc
             project.Deadline = request.Deadline;
             project.Description = request.Description;
+            project.ResultLink = request.ResultLink;
             project.UpdatedAt = DateTime.UtcNow;
             // Lưu ý: KHÔNG update Benefits ở đây vì đây là snapshot đã cam kết với customer
 
@@ -144,6 +215,7 @@ namespace Aura.Infrastructure.Services
                 Benefits = project.Benefits,
                 Deadline = project.Deadline,
                 Description = project.Description,
+                ResultLink = project.ResultLink,
                 CreatedAt = project.CreatedAt,
                 UpdatedAt = project.UpdatedAt
             };

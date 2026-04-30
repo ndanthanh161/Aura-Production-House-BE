@@ -14,6 +14,7 @@ namespace Aura.Domain.Entity
         public decimal Deposit { get; set; } // Tiền cọc
         public DateTime Deadline { get; set; }
         public string? Description { get; set; }
+        public string? ResultLink { get; set; } // Link Google Drive bàn giao sản phẩm
 
         /// <summary>
         /// Snapshot danh sách lợi ích tại thời điểm customer mua package.

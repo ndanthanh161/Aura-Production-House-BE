@@ -17,9 +17,12 @@ public class AppDbContext : DbContext
     public DbSet<PortfolioItem> PortfolioItems { get; set; }
     public DbSet<ContactMessage> ContactMessages { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<AuraKnowledge> AuraKnowledge { get; set; }
+    public DbSet<ChatLog> ChatLogs { get; set; }
     #endregion
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("vector");
         base.OnModelCreating(modelBuilder);
 
         // ==================== Role ====================
@@ -181,6 +184,14 @@ public class AppDbContext : DbContext
             entity.HasOne(r => r.User)
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(r => r.UserId);
+        });
+
+        // ==================== AuraKnowledge (RAG) ====================
+        modelBuilder.Entity<AuraKnowledge>(entity =>
+        {
+            entity.HasKey(k => k.Id);
+            entity.Property(k => k.Content).IsRequired();
+            entity.Property(k => k.Embedding).HasColumnType("vector(1536)"); // 1536 for OpenAI text-embedding-3-small
         });
     }
 

@@ -3,6 +3,7 @@ using Aura.Domain.Interfaces;
 using Aura.Infrastructure.Data;
 using Aura.Infrastructure.Repositories;
 using Aura.Infrastructure.Services;
+using Aura.Domain.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,7 @@ public static class DependencyInjection
                     errorCodesToAdd: null
                 );
                 npgsqlOptions.CommandTimeout(30);
+                npgsqlOptions.UseVector(); // Kích hoạt pgvector
             });
         });
 
@@ -56,6 +58,15 @@ public static class DependencyInjection
         services.AddScoped<IPhotographerService, PhotographerService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
+
+        // ===== Mail Service =====
+        services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
+        services.AddScoped<IMailService, MailService>();
+
+        // ===== AI Chatbot (RAG) =====
+        services.Configure<AiSettings>(configuration.GetSection("AiSettings"));
+        services.AddHttpClient<IAiService, AiService>();
+        services.AddScoped<IChatService, ChatService>();
 
         // ===== JWT Authentication =====
         var jwtSettings = configuration.GetSection("JwtSettings");

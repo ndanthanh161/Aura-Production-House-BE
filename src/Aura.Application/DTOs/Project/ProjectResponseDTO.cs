@@ -17,6 +17,7 @@ namespace Aura.Application.DTOs.Project
         public decimal Revenue { get; set; }
         public DateTime Deadline { get; set; }
         public string? Description { get; set; }
+        public string? ResultLink { get; set; }
 
         /// <summary>
         /// Snapshot lợi ích được cam kết tại thời điểm customer mua package.

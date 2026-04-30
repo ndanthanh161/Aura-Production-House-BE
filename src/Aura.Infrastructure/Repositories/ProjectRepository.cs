@@ -75,10 +75,6 @@ namespace Aura.Infrastructure.Repositories
 
             if (clientId.HasValue)
             {
-                query = query.Where(p =>
-                    p.Status == ProjectStatus.Scheduled ||
-                    p.Status == ProjectStatus.InProduction);
-                
                 query = query.Where(p => p.ClientId == clientId.Value);
             }
 
