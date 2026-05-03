@@ -56,5 +56,20 @@ namespace Aura.API.Controllers
             return Ok(ApiResponse<UserResponseDTO>.SuccessResponse(
                 updated, "Cập nhật thông tin khách hàng thành công."));
         }
+
+        // PATCH api/v1/customer/{id}/deactivate
+        /// <summary>Vô hiệu hóa khách hàng (Admin only)</summary>
+        [HttpPatch("{id:guid}/deactivate")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<ApiResponse<string>>> Deactivate(Guid id)
+        {
+            var result = await _customerService.DeactivateCustomerAsync(id);
+            if (!result)
+                return NotFound(ApiResponse<string>.NotFoundResponse(
+                    "Không tìm thấy khách hàng."));
+
+            return Ok(ApiResponse<string>.SuccessResponse(
+                "Deactivated", "Đã vô hiệu hóa khách hàng thành công."));
+        }
     }
 }

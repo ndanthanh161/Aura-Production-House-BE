@@ -96,6 +96,12 @@ public class AuthService : IAuthService
             return ApiResponse<AuthResponse>.UnauthorizedResponse("Invalid email or password.");
         }
 
+        // Kiểm tra tài khoản có bị khóa không
+        if (!user.IsActive)
+        {
+            return ApiResponse<AuthResponse>.UnauthorizedResponse("Your account has been deactivated. Please contact support.");
+        }
+
         // 2. Verify password
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
         {
@@ -166,6 +172,12 @@ public class AuthService : IAuthService
             };
 
             user = await _userRepository.CreateAsync(user);
+        }
+
+        // Kiểm tra tài khoản có bị khóa không
+        if (!user.IsActive)
+        {
+            return ApiResponse<AuthResponse>.UnauthorizedResponse("Your account has been deactivated. Please contact support.");
         }
 
         // 3. Generate JWT tokens

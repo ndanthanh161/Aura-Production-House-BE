@@ -17,5 +17,6 @@ namespace Aura.Application.Interfaces
         Task<SlotAvailabilityResponseDTO> CheckSlotAvailabilityAsync(DateTime date, int maxSlotsPerDay = 3);
         Task<ProjectResponseDTO?> RescheduleAsync(RescheduleRequestDTO request);
         Task<bool> CancelProjectAsync(Guid projectId);
+        Task<bool> HandlePaymentSuccessAsync(Guid projectId, decimal amount, string transactionId);
     }
 }

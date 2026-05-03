@@ -113,6 +113,13 @@ namespace Aura.API.Controllers
             }
 
             var result = await _projectService.GetSchedulesAsync(clientId, staffId, from, to);
+            
+            // Nếu là khách hàng, lọc bỏ các dự án đã hủy
+            if (role == "User")
+            {
+                result = result.Where(p => p.Status != ProjectStatus.Cancelled);
+            }
+
             return Ok(ApiResponse<IEnumerable<ProjectResponseDTO>>.SuccessResponse(result));
         }
 
@@ -143,9 +150,28 @@ namespace Aura.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,User")]
         public async Task<ActionResult<ApiResponse<string>>> Cancel(Guid id)
         {
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            var project = await _projectService.GetProjectByIdAsync(id);
+            if (project == null) return NotFound(ApiResponse<string>.NotFoundResponse("Không tìm thấy dự án."));
+
+            // Nếu là User thường (Khách hàng)
+            if (role == "User" && Guid.TryParse(userIdStr, out var userId))
+            {
+                // 1. Phải là chủ dự án
+                if (project.ClientId != userId) return Forbid();
+                
+                // 2. Chỉ được hủy khi chưa thanh toán (Trạng thái Scheduled)
+                if (project.Status != ProjectStatus.Scheduled)
+                {
+                    return BadRequest(ApiResponse<string>.ErrorResponse("Chỉ có thể hủy dự án khi chưa thanh toán."));
+                }
+            }
+
             var result = await _projectService.CancelProjectAsync(id);
             if (!result) return BadRequest(ApiResponse<string>.ErrorResponse("Không thể hủy dự án này."));
 

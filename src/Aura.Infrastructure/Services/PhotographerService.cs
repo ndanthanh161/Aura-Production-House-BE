@@ -94,18 +94,10 @@ namespace Aura.Infrastructure.Services
             return true;
         }
 
-        // ─── Vô hiệu hóa photographer ─────────────────────────────────────────
+        // ─── Vô hiệu hóa photographer (Soft Delete) ──────────────────────────
         public async Task<bool> DeactivatePhotographerAsync(Guid id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            if (user == null || !IsPhotographerRole(user.Role.Name)) return false;
-
-            if (!user.FullName.StartsWith("[Da nghi]"))
-                user.FullName = $"[Da nghi] {user.FullName}";
-
-            user.UpdatedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(user);
-            return true;
+            return await _userRepository.DeactivateAsync(id);
         }
 
         // ─── Helper: chỉ chấp nhận Photographer ──────────────────────────────
@@ -121,6 +113,7 @@ namespace Aura.Infrastructure.Services
             Phone     = user.Phone,
             Avatar    = user.Avatar,
             Role      = user.Role.Name,
+            IsActive  = user.IsActive,
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt
         };

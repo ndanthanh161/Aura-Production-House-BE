@@ -40,11 +40,12 @@ public class UserRepository : IUserRepository
         return (await GetByIdAsync(user.Id))!;
     }
 
+    /// <summary>Lấy tất cả user theo tên role, mặc định chỉ lấy user đang hoạt động</summary>
     public async Task<IEnumerable<User>> GetAllByRoleAsync(string roleName)
     {
         return await _context.Users
             .Include(u => u.Role)
-            .Where(u => u.Role.Name == roleName)
+            .Where(u => u.Role.Name == roleName && u.IsActive)
             .OrderBy(u => u.FullName)
             .ToListAsync();
     }
@@ -54,5 +55,17 @@ public class UserRepository : IUserRepository
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
         return (await GetByIdAsync(user.Id))!;
+    }
+
+    public async Task<bool> DeactivateAsync(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return false;
+
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

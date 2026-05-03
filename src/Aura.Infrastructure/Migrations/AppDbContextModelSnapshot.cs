@@ -166,6 +166,20 @@ namespace Aura.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Gateway")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -188,6 +202,9 @@ namespace Aura.Infrastructure.Migrations
                     b.Property<string>("TransactionId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -260,9 +277,6 @@ namespace Aura.Infrastructure.Migrations
 
                     b.Property<DateTime>("Deadline")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Deposit")
-                        .HasColumnType("numeric");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -381,6 +395,9 @@ namespace Aura.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Password")
                         .IsRequired()

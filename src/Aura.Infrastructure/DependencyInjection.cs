@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPackageRepository, PackageRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
 
         // ===== Services =====
         services.AddScoped<IJwtTokenService, JwtTokenService>();

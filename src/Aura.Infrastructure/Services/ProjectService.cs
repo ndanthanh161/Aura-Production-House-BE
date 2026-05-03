@@ -12,17 +12,20 @@ namespace Aura.Infrastructure.Services
         private readonly IPackageRepository _packageRepository;
         private readonly IUserRepository _userRepository;
         private readonly IMailService _mailService;
+        private readonly IPaymentRepository _paymentRepository;
 
         public ProjectService(
             IProjectRepository projectRepository, 
             IPackageRepository packageRepository,
             IUserRepository userRepository,
-            IMailService mailService)
+            IMailService mailService,
+            IPaymentRepository paymentRepository)
         {
             _projectRepository = projectRepository;
             _packageRepository = packageRepository;
             _userRepository = userRepository;
             _mailService = mailService;
+            _paymentRepository = paymentRepository;
         }
 
         public async Task<ProjectResponseDTO> CreateProjectAsync(CreateProjectRequestDTO request)
@@ -42,13 +45,12 @@ namespace Aura.Infrastructure.Services
 
                 // Gán giá Revenue của Project dựa theo giá chuẩn Menu (Price) của Package
                 Revenue = package.Price,
-                Deposit = request.Deposit, // Gán tiền cọc thực tế khách hàng đã thanh toán
 
                 // Tự động snapshot toàn bộ Benefits từ Package → không cần Customer nhập thủ công
                 Benefits = new List<string>(package.Benefits),
 
-                Status = ProjectStatus.InProduction, // Đang thực hiện (sau khi thanh toán)
-                Deadline = DateTime.UtcNow.AddDays(7), // Mặc định deadline 7 ngày
+                Status = ProjectStatus.Scheduled, // Cần để Scheduled để hiện mã QR thanh toán
+                Deadline = DateTime.UtcNow.AddDays(7),
                 Description = request.Description,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -62,7 +64,7 @@ namespace Aura.Infrastructure.Services
                 var user = await _userRepository.GetByIdAsync(request.ClientId);
                 if (user != null && !string.IsNullOrEmpty(user.Email))
                 {
-                    string subject = $"[AURA] Xác nhận thanh toán gói dịch vụ: {package.Name}";
+                    string subject = $"[AURA] Đặt lịch thành công - Chờ thanh toán: {package.Name}";
                     string body = $@"
                         <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
                             <div style='border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;'>
@@ -71,7 +73,8 @@ namespace Aura.Infrastructure.Services
                             
                             <p>Kính gửi <strong>{user.FullName}</strong>,</p>
                             
-                            <p>Chúng tôi xin thông báo đã nhận được khoản thanh toán của quý khách cho gói dịch vụ <strong>{package.Name}</strong>.</p>
+                            <p>Yêu cầu đặt lịch cho gói <strong>{package.Name}</strong> đã được hệ thống ghi nhận.</p>
+                            <p>Vui lòng hoàn tất thanh toán bằng mã QR trên website để chúng tôi bắt đầu triển khai dự án.</p>
                             
                             <div style='background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;'>
                                 <h4 style='margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;'>Thông tin đơn hàng</h4>
@@ -86,7 +89,7 @@ namespace Aura.Infrastructure.Services
                                     </tr>
                                     <tr>
                                         <td style='padding: 8px 0; color: #666;'>Số tiền thanh toán:</td>
-                                        <td style='padding: 8px 0;'><strong>{project.Deposit:N0} VNĐ</strong></td>
+                                        <td style='padding: 8px 0;'><strong>{project.Revenue:N0} VNĐ</strong> (100%)</td>
                                     </tr>
                                     <tr>
                                         <td style='padding: 8px 0; color: #666;'>Thời gian:</td>
@@ -141,7 +144,6 @@ namespace Aura.Infrastructure.Services
             project.StaffId = request.StaffId;
             project.Status = request.Status;
             project.Revenue = request.Revenue; // Update lại Doanh thu thực tế nếu phát sinh
-            project.Deposit = request.Deposit; // Update tiền cọc
             project.Deadline = request.Deadline;
             project.Description = request.Description;
             project.ResultLink = request.ResultLink;
@@ -197,6 +199,69 @@ namespace Aura.Infrastructure.Services
             return await _projectRepository.CancelAsync(projectId);
         }
 
+        public async Task<bool> HandlePaymentSuccessAsync(Guid projectId, decimal amount, string transactionId)
+        {
+            // 1. Tìm dự án
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null) return false;
+
+            // 2. Kiểm tra nếu giao dịch đã tồn tại để tránh trùng lặp
+            var existingPayment = await _paymentRepository.GetByTransactionIdAsync(transactionId);
+            if (existingPayment != null) return true; // Đã xử lý rồi
+
+            // 3. Cập nhật trạng thái dự án
+            project.Status = ProjectStatus.InProduction;
+            project.UpdatedAt = DateTime.UtcNow;
+            await _projectRepository.UpdateAsync(project);
+
+            // 4. Tạo bản ghi thanh toán
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid(),
+                UserId = project.ClientId,
+                ProjectId = project.Id,
+                Amount = amount,
+                Currency = "VND",
+                TotalAmount = amount,
+                OrderCode = $"AURA-{DateTime.Now:yyyyMMdd}-{transactionId.Substring(Math.Max(0, transactionId.Length - 4))}",
+                PaymentMethod = Aura.Domain.Enum.PaymentMethod.VietQR,
+                Gateway = "SePay",
+                Status = Aura.Domain.Enum.PaymentStatus.Completed,
+                TransactionId = transactionId,
+                Note = $"Thanh toan cho du an {project.Name}",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _paymentRepository.AddAsync(payment);
+
+            // 5. Gửi email thông báo (tận dụng logic có sẵn)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var user = await _userRepository.GetByIdAsync(project.ClientId);
+                    var package = await _packageRepository.GetByIdAsync(project.PackageId);
+                    if (user != null && package != null)
+                    {
+                        string subject = $"[AURA] Xác nhận thanh toán thành công: {package.Name}";
+                        string body = $@"
+                            <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                                <h2>AURA PRODUCTION HOUSE</h2>
+                                <p>Chào <strong>{user.FullName}</strong>,</p>
+                                <p>Hệ thống đã ghi nhận khoản thanh toán <strong>{amount:N0} VNĐ</strong> cho dự án <strong>{project.Name}</strong>.</p>
+                                <p>Mã giao dịch: <strong>{transactionId}</strong></p>
+                                <p>Dự án của bạn đã được chuyển sang trạng thái <strong>Đang thực hiện</strong>. Chúng tôi sẽ sớm liên hệ với bạn.</p>
+                                <p>Trân trọng,<br/>Aura Team</p>
+                            </div>";
+                        await _mailService.SendEmailAsync(user.Email, subject, body);
+                    }
+                }
+                catch { /* Ignore email failure */ }
+            });
+
+            return true;
+        }
+
         private ProjectResponseDTO MapToDTO(Project project)
         {
             return new ProjectResponseDTO
@@ -207,7 +272,7 @@ namespace Aura.Infrastructure.Services
                 ClientName = project.Client?.FullName ?? string.Empty,
                 PackageId = project.PackageId,
                 PackageName = project.Package?.Name ?? string.Empty,
-                Deposit = project.Deposit,
+
                 StaffId = project.StaffId == Guid.Empty ? null : project.StaffId,
                 StaffName = project.Staff?.FullName,
                 Status = project.Status,

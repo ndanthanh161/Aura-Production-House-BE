@@ -12,5 +12,8 @@ namespace Aura.Application.Interfaces
 
         /// <summary>Cập nhật thông tin khách hàng</summary>
         Task<UserResponseDTO?> UpdateCustomerAsync(UpdateUserRequestDTO request);
+
+        /// <summary>Vô hiệu hóa khách hàng (Soft Delete)</summary>
+        Task<bool> DeactivateCustomerAsync(Guid id);
     }
 }

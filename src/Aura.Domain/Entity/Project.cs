@@ -11,7 +11,7 @@ namespace Aura.Domain.Entity
         public Guid PackageId { get; set; }
         public ProjectStatus Status { get; set; }
         public decimal Revenue { get; set; }
-        public decimal Deposit { get; set; } // Tiền cọc
+
         public DateTime Deadline { get; set; }
         public string? Description { get; set; }
         public string? ResultLink { get; set; } // Link Google Drive bàn giao sản phẩm

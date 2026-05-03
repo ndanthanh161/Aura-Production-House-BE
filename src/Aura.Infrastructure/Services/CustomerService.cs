@@ -44,6 +44,14 @@ namespace Aura.Infrastructure.Services
             return MapToDTO(updated);
         }
 
+        public async Task<bool> DeactivateCustomerAsync(Guid id)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null || user.Role.Name != "User") return false;
+
+            return await _userRepository.DeactivateAsync(id);
+        }
+
         // ─── Helper ───────────────────────────────────────────────────────
         private static UserResponseDTO MapToDTO(User user) => new()
         {
@@ -53,6 +61,7 @@ namespace Aura.Infrastructure.Services
             Phone     = user.Phone,
             Avatar    = user.Avatar,
             Role      = user.Role.Name,
+            IsActive  = user.IsActive,
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt
         };

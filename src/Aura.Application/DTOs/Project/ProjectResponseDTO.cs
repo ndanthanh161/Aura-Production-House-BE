@@ -10,7 +10,7 @@ namespace Aura.Application.DTOs.Project
         public string? ClientName { get; set; }
         public Guid PackageId { get; set; }
         public string? PackageName { get; set; }
-        public decimal Deposit { get; set; }
+
         public Guid? StaffId { get; set; }
         public string? StaffName { get; set; }
         public ProjectStatus Status { get; set; }
