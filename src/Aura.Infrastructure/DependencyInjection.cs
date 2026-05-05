@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IPackageRepository, PackageRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IPortfolioRepository, PortfolioRepository>();
 
         // ===== Services =====
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -59,6 +60,13 @@ public static class DependencyInjection
         services.AddScoped<IPhotographerService, PhotographerService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
+
+        // ===== Cloudinary =====
+        services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
+        services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+        // ===== Portfolio =====
+        services.AddScoped<IPortfolioService, PortfolioService>();
 
         // ===== Mail Service =====
         services.Configure<MailSettings>(configuration.GetSection("MailSettings"));

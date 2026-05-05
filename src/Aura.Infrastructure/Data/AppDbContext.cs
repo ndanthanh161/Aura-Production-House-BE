@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Project> Projects { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<PortfolioItem> PortfolioItems { get; set; }
+    public DbSet<PortfolioMedia> PortfolioMedias { get; set; }
     public DbSet<ContactMessage> ContactMessages { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<AuraKnowledge> AuraKnowledge { get; set; }
@@ -150,8 +151,9 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Title).IsRequired().HasMaxLength(300);
-            entity.Property(p => p.ImageUrl).IsRequired().HasMaxLength(500);
-            entity.Property(p => p.Description).HasMaxLength(2000);
+            entity.Property(p => p.ThumbnailUrl).HasMaxLength(500);
+            entity.Property(p => p.Content).HasColumnType("text");
+            entity.Property(p => p.ClientName).HasMaxLength(200);
 
             entity.Property(p => p.Category)
                 .IsRequired()
@@ -162,6 +164,20 @@ public class AppDbContext : DbContext
                 .WithMany(pr => pr.PortfolioItems)
                 .HasForeignKey(p => p.ProjectId)
                 .IsRequired(false);
+
+            entity.HasMany(p => p.MediaItems)
+                .WithOne(m => m.PortfolioItem)
+                .HasForeignKey(m => m.PortfolioItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ==================== PortfolioMedia ====================
+        modelBuilder.Entity<PortfolioMedia>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Url).IsRequired().HasMaxLength(500);
+            entity.Property(m => m.PublicId).IsRequired().HasMaxLength(300);
+            entity.Property(m => m.MediaType).IsRequired().HasMaxLength(20);
         });
 
         // ==================== ContactMessage ====================
