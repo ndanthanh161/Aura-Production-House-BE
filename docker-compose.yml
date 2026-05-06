@@ -41,8 +41,14 @@ services:
       - GoogleAuth__ClientId=${GOOGLE_CLIENT_ID}
       - MailSettings__Mail=${MAIL_USER}
       - MailSettings__Password=${MAIL_PASSWORD}
+      - MailSettings__Host=${MAIL_HOST}
+      - MailSettings__Port=${MAIL_PORT}
+      - MailSettings__DisplayName=${MAIL_DISPLAY_NAME}
       - AiSettings__ApiKey=${OPENAI_API_KEY}
       - SePay__ApiKey=${SEPAY_API_KEY}
+      - SePay__BankId=${SEPAY_BANK_ID}
+      - SePay__AccountNumber=${SEPAY_ACCOUNT_NUMBER}
+      - SePay__AccountName=${SEPAY_ACCOUNT_NAME}
       - Cloudinary__CloudName=${CLOUDINARY_CLOUD_NAME}
       - Cloudinary__ApiKey=${CLOUDINARY_API_KEY}
       - Cloudinary__ApiSecret=${CLOUDINARY_API_SECRET}

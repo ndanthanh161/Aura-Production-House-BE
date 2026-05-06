@@ -96,10 +96,10 @@ public static class DataSeeder
                 new Package
                 {
                     Id = Guid.NewGuid(),
-                    Name = "Gói Khởi Đầu",
+                    Name = "CƠ BẢN",
                     Price = 2000000,
-                    Description = "Phù hợp cho cá nhân mới bắt đầu xây dựng hình ảnh.",
-                    Benefits = new List<string> { "Chụp 1 buổi", "Chỉnh sửa 10 ảnh", "1 video ngắn" },
+                    Description = "Dành cho cá nhân mới bắt đầu làm hình ảnh.",
+                    Benefits = new List<string> { "1 buổi chụp (Profile hoặc sản phẩm)", "2 video (short video)" },
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -107,10 +107,10 @@ public static class DataSeeder
                 new Package
                 {
                     Id = Guid.NewGuid(),
-                    Name = "Gói Chuyên Nghiệp",
+                    Name = "NÂNG CAO",
                     Price = 5000000,
-                    Description = "Dành cho những người muốn làm thương hiệu cá nhân bài bản.",
-                    Benefits = new List<string> { "Chụp 2 buổi", "Chỉnh sửa 30 ảnh", "3 video ngắn", "Trang điểm chuyên nghiệp" },
+                    Description = "Dành cho người muốn xây dựng thương hiệu bài bản.",
+                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "01 buổi chụp", "5 video", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa" },
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -118,10 +118,32 @@ public static class DataSeeder
                 new Package
                 {
                     Id = Guid.NewGuid(),
-                    Name = "Gói Đột Phá",
+                    Name = "TĂNG TỐC",
+                    Price = 8000000,
+                    Description = "Dành cho shop bán hàng hoặc KOLs đang lên.",
+                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "01 Concept chụp sáng tạo", "8 Video", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Quản trị trang (Post bài/Set quảng cáo cơ bản)" },
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "ĐỘT PHÁ",
                     Price = 10000000,
-                    Description = "Giải pháp toàn diện để trở thành Tech Influencer.",
-                    Benefits = new List<string> { "Quản trị nội dung 1 tháng", "12 video TikTok/Reels", "Hỗ trợ kịch bản", "Chụp ảnh profile cao cấp" },
+                    Description = "Tư vấn định vị thương hiệu mạnh mẽ.",
+                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "1 Concept chụp sáng tạo", "12 video/tháng", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Quản trị trang (Post bài/Set quảng cáo cơ bản)", "Tư vấn định vị thương hiệu" },
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Package
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "CHIẾN LƯỢC",
+                    Price = 20000000,
+                    Description = "Đối tác đồng hành dài hạn và chuyên sâu.",
+                    Benefits = new List<string> { "Báo cáo hiệu quả hàng tháng", "Quản trị trang chuyên sâu", "Lên kế hoạch chi tiết", "1 Concept chụp độc quyền", "15 video/tháng", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Tư vấn định vị thương hiệu" },
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
