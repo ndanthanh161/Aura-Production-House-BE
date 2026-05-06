@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Aura.Application.Interfaces;
 
-namespace Infrastructure.Data;
+namespace Aura.Infrastructure.Data;
 
 public static class DataSeeder
 {

@@ -19,6 +19,7 @@ namespace Aura.Infrastructure.Services
                 settings.Value.ApiSecret
             );
             _cloudinary = new Cloudinary(account);
+            _cloudinary.Api.Timeout = 600000; // 10 minutes in milliseconds
         }
 
         public async Task<(string Url, string PublicId)> UploadAsync(IFormFile file, string folder = "portfolio")
@@ -66,6 +67,16 @@ namespace Aura.Infrastructure.Services
             var deleteParams = new DeletionParams(publicId);
             var result = await _cloudinary.DestroyAsync(deleteParams);
             return result.Result == "ok";
+        }
+        
+        public string GenerateSignature(IDictionary<string, object> parameters)
+        {
+            return _cloudinary.Api.SignParameters(parameters);
+        }
+
+        public (string CloudName, string ApiKey) GetCloudSettings()
+        {
+            return (_cloudinary.Api.Account.Cloud, _cloudinary.Api.Account.ApiKey);
         }
     }
 }

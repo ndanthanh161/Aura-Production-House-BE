@@ -14,11 +14,18 @@ namespace Aura.Application.DTOs.Statistics
         public decimal TotalRevenue { get; set; }
         public decimal RevenueThisMonth { get; set; }
         public decimal RevenueLastMonth { get; set; }
+        public double RevenueGrowth { get; set; }          // % Tăng trưởng doanh thu
+        public decimal AverageOrderValue { get; set; }     // AOV
 
         // ── Người dùng ─────────────────────────
         public int TotalCustomers { get; set; }
         public int TotalStaff { get; set; }
         public int NewCustomersThisMonth { get; set; }
+
+        // ── Chỉ số hiệu quả (Analysis) ─────────
+        public double ConversionRate { get; set; }         // % Chuyển đổi (Paid / Booked)
+        public Dictionary<string, decimal> RevenueByPackage { get; set; } = new();
+        public Dictionary<string, int> ProjectsByCategory { get; set; } = new();
 
         // ── Booking ────────────────────────────
         public int TotalBookings { get; set; }             // Tổng lịch (Scheduled + InProduction)

@@ -8,6 +8,8 @@ namespace Aura.Application.DTOs.User
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? Avatar { get; set; }
+        public string? Bio { get; set; }
+        public string? Specialization { get; set; }
         public string Role { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }

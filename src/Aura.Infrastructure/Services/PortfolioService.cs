@@ -28,6 +28,7 @@ namespace Aura.Infrastructure.Services
                 ClientName = request.ClientName,
                 ProjectId = request.ProjectId,
                 DisplayOrder = request.DisplayOrder,
+                IsHot = request.IsHot,
                 IsPublished = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -66,6 +67,7 @@ namespace Aura.Infrastructure.Services
             item.ClientName = request.ClientName;
             item.ProjectId = request.ProjectId;
             item.DisplayOrder = request.DisplayOrder;
+            item.IsHot = request.IsHot;
             item.UpdatedAt = DateTime.UtcNow;
 
             var updated = await _portfolioRepository.UpdateAsync(item);
@@ -135,6 +137,66 @@ namespace Aura.Infrastructure.Services
             };
         }
 
+        public async Task<PortfolioMediaResponseDTO> AddMediaDirectAsync(Guid portfolioItemId, string url, string publicId, string mediaType)
+        {
+            var item = await _portfolioRepository.GetByIdAsync(portfolioItemId);
+            if (item == null) throw new Exception("Portfolio item not found.");
+
+            var media = new PortfolioMedia
+            {
+                Id = Guid.NewGuid(),
+                PortfolioItemId = portfolioItemId,
+                Url = url,
+                PublicId = publicId,
+                MediaType = mediaType,
+                DisplayOrder = item.MediaItems.Count,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _portfolioRepository.AddMediaAsync(media);
+
+            // Set first image as thumbnail if none exists
+            if (item.ThumbnailUrl == null && mediaType == "image")
+            {
+                item.ThumbnailUrl = url;
+                await _portfolioRepository.UpdateAsync(item);
+            }
+
+            return new PortfolioMediaResponseDTO
+            {
+                Id = media.Id,
+                Url = media.Url,
+                PublicId = media.PublicId,
+                MediaType = media.MediaType,
+                DisplayOrder = media.DisplayOrder
+            };
+        }
+
+        public object GetUploadSignature(string folder = "portfolio")
+        {
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var parameters = new Dictionary<string, object>
+            {
+                { "timestamp", timestamp }
+            };
+
+            // Cloudinary signed upload doesn't strictly require resource_type in signature 
+            // unless it's explicitly passed as a parameter to the upload call.
+            // However, to be safe and clear, we sign only the timestamp.
+
+            var signature = _cloudinaryService.GenerateSignature(parameters);
+            var (cloudName, apiKey) = _cloudinaryService.GetCloudSettings();
+
+            return new
+            {
+                signature,
+                timestamp,
+                cloudName,
+                apiKey,
+                folder = $"aura/{folder}"
+            };
+        }
+
         public async Task<bool> DeleteMediaAsync(Guid mediaId)
         {
             var media = await _portfolioRepository.GetMediaByIdAsync(mediaId);
@@ -158,10 +220,13 @@ namespace Aura.Infrastructure.Services
                 ClientName = item.ClientName,
                 ProjectId = item.ProjectId,
                 IsPublished = item.IsPublished,
+                IsHot = item.IsHot,
                 DisplayOrder = item.DisplayOrder,
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
-                MediaItems = item.MediaItems.Select(m => new PortfolioMediaResponseDTO
+                MediaItems = item.MediaItems
+                    .OrderBy(m => m.DisplayOrder)
+                    .Select(m => new PortfolioMediaResponseDTO
                 {
                     Id = m.Id,
                     Url = m.Url,

@@ -8,7 +8,7 @@ namespace Aura.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class PhotographerController : ControllerBase
     {
         private readonly IPhotographerService _photographerService;
@@ -21,6 +21,7 @@ namespace Aura.API.Controllers
         // POST api/v1/photographer
         /// <summary>Tạo mới một photographer (Admin only)</summary>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<UserResponseDTO>>> Create(
             [FromBody] CreatePhotographerRequestDTO request)
         {

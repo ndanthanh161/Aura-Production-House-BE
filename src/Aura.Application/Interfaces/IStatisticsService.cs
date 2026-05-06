@@ -11,6 +11,6 @@ namespace Aura.Application.Interfaces
         Task<IEnumerable<MonthlyRevenueDTO>> GetMonthlyRevenueAsync(int months = 12);
 
         /// <summary>Hiệu suất từng photographer</summary>
-        Task<IEnumerable<StaffPerformanceDTO>> GetStaffPerformanceAsync();
+        Task<IEnumerable<PhotographerPerformanceDTO>> GetPhotographerPerformanceAsync();
     }
 }

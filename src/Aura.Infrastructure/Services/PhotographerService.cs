@@ -70,10 +70,12 @@ namespace Aura.Infrastructure.Services
             var user = await _userRepository.GetByIdAsync(request.Id);
             if (user == null || !IsPhotographerRole(user.Role.Name)) return null;
 
-            user.FullName  = request.FullName;
-            user.Phone     = request.Phone;
-            user.Avatar    = request.Avatar;
-            user.UpdatedAt = DateTime.UtcNow;
+            user.FullName       = request.FullName;
+            user.Phone          = request.Phone;
+            user.Avatar         = request.Avatar;
+            user.Bio            = request.Bio;
+            user.Specialization = request.Specialization;
+            user.UpdatedAt      = DateTime.UtcNow;
 
             var updated = await _userRepository.UpdateAsync(user);
             return MapToDTO(updated);
@@ -110,12 +112,14 @@ namespace Aura.Infrastructure.Services
             Id        = user.Id,
             FullName  = user.FullName,
             Email     = user.Email,
-            Phone     = user.Phone,
-            Avatar    = user.Avatar,
-            Role      = user.Role.Name,
-            IsActive  = user.IsActive,
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt
+            Phone          = user.Phone,
+            Avatar         = user.Avatar,
+            Bio            = user.Bio,
+            Specialization = user.Specialization,
+            Role           = user.Role.Name,
+            IsActive       = user.IsActive,
+            CreatedAt      = user.CreatedAt,
+            UpdatedAt      = user.UpdatedAt
         };
     }
 }

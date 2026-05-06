@@ -36,9 +36,13 @@ public static class DependencyInjection
         });
 
         // ===== Redis =====
+        var redisConn = configuration.GetConnectionString("Redis") ?? "localhost:6379";
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => 
+            StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
+
         services.AddStackExchangeRedisCache(options =>
         {
-            options.Configuration = configuration.GetConnectionString("Redis");
+            options.Configuration = redisConn;
             options.InstanceName = "Aura_";
         });
 
@@ -50,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+        services.AddScoped<IContactMessageRepository, ContactMessageRepository>();
 
         // ===== Services =====
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -76,6 +81,7 @@ public static class DependencyInjection
         services.Configure<AiSettings>(configuration.GetSection("AiSettings"));
         services.AddHttpClient<IAiService, AiService>();
         services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<IContactMessageService, ContactMessageService>();
 
         // ===== JWT Authentication =====
         var jwtSettings = configuration.GetSection("JwtSettings");

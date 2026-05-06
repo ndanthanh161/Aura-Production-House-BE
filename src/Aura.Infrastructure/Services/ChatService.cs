@@ -25,16 +25,30 @@ namespace Aura.Infrastructure.Services
             var embedding = await _aiService.GetEmbeddingAsync(message);
             var vector = new Vector(embedding);
 
-            // 2. Search for relevant context in DB
+            // 2. Search for relevant context in Knowledge Base
             var relevantContext = await _context.AuraKnowledge
                 .OrderBy(k => k.Embedding.L2Distance(vector))
                 .Take(8)
                 .Select(k => k.Content)
                 .ToListAsync();
 
-            var contextString = string.Join("\n---\n", relevantContext);
+            // 3. Search for relevant Portfolio Projects
+            // We search by title keywords for better relevance
+            var portfolioItems = await _context.PortfolioItems
+                .Where(p => p.IsPublished)
+                .OrderByDescending(p => p.IsHot)
+                .ThenByDescending(p => p.CreatedAt)
+                .Take(5)
+                .Select(p => $"Dự án mẫu: {p.Title} (Hạng mục: {p.Category}, Khách hàng: {p.ClientName ?? "Aura Client"})")
+                .ToListAsync();
 
-            // 3. Get response from AI
+            var contextString = string.Join("\n---\n", relevantContext);
+            if (portfolioItems.Any())
+            {
+                contextString += "\n\nCÁC DỰ ÁN THỰC TẾ ĐÃ THỰC HIỆN (HÃY GỢI Ý KHI CẦN):\n" + string.Join("\n", portfolioItems);
+            }
+
+            // 4. Get response from AI
             var botResponse = await _aiService.GetChatResponseAsync(message, contextString);
 
             // 4. Save log to DB

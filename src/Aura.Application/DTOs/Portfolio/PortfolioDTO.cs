@@ -12,6 +12,7 @@ namespace Aura.Application.DTOs.Portfolio
         public string? ClientName { get; set; }
         public Guid? ProjectId { get; set; }
         public int DisplayOrder { get; set; }
+        public bool IsHot { get; set; }
     }
 
     public class UpdatePortfolioRequestDTO
@@ -23,6 +24,7 @@ namespace Aura.Application.DTOs.Portfolio
         public string? ClientName { get; set; }
         public Guid? ProjectId { get; set; }
         public int DisplayOrder { get; set; }
+        public bool IsHot { get; set; }
     }
 
     // ─── Response DTOs ───────────────────────────────────────
@@ -37,6 +39,7 @@ namespace Aura.Application.DTOs.Portfolio
         public string? ClientName { get; set; }
         public Guid? ProjectId { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsHot { get; set; }
         public int DisplayOrder { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

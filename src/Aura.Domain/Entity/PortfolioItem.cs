@@ -12,6 +12,7 @@ namespace Aura.Domain.Entity
         public string? ClientName { get; set; } // Tên khách hàng (hiển thị trên portfolio)
         public Guid? ProjectId { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsHot { get; set; } // Đánh dấu dự án nổi bật
         public int DisplayOrder { get; set; } // Thứ tự hiển thị
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

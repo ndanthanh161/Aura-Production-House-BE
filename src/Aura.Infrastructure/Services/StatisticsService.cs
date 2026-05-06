@@ -23,67 +23,84 @@ namespace Aura.Infrastructure.Services
             var firstDayOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var firstDayLastMonth = firstDayOfMonth.AddMonths(-1);
 
-            // Dự án
-            var projects = await _context.Projects.ToListAsync();
-            var totalRevenue = projects
-                .Where(p => p.Status == ProjectStatus.Completed)
-                .Sum(p => p.Revenue);
+            // 1. Dữ liệu thô
+            var projects = await _context.Projects
+                .Include(p => p.Package)
+                .ToListAsync();
+            
+            var payments = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Completed)
+                .ToListAsync();
 
-            var revenueThisMonth = projects
-                .Where(p => p.Status == ProjectStatus.Completed && p.UpdatedAt >= firstDayOfMonth)
-                .Sum(p => p.Revenue);
+            // 2. Tính toán doanh thu
+            var totalRevenue = payments.Sum(p => p.Amount);
+            var revenueThisMonth = payments.Where(p => p.CreatedAt >= firstDayOfMonth).Sum(p => p.Amount);
+            var revenueLastMonth = payments.Where(p => p.CreatedAt >= firstDayLastMonth && p.CreatedAt < firstDayOfMonth).Sum(p => p.Amount);
 
-            var revenueLastMonth = projects
-                .Where(p => p.Status == ProjectStatus.Completed
-                         && p.UpdatedAt >= firstDayLastMonth
-                         && p.UpdatedAt < firstDayOfMonth)
-                .Sum(p => p.Revenue);
+            // 3. Phân tích tăng trưởng & AOV
+            double revenueGrowth = 0;
+            if (revenueLastMonth > 0)
+            {
+                revenueGrowth = (double)((revenueThisMonth - revenueLastMonth) / revenueLastMonth * 100);
+            }
 
-            // Booking tháng này
-            var bookingsThisMonth = projects.Count(p =>
-                (p.Status == ProjectStatus.Scheduled || p.Status == ProjectStatus.InProduction)
-                && p.CreatedAt >= firstDayOfMonth);
+            var paidProjectIds = payments.Select(p => p.ProjectId).Distinct().ToList();
+            decimal averageOrderValue = paidProjectIds.Count > 0 ? totalRevenue / paidProjectIds.Count : 0;
 
-            var cancelledThisMonth = projects.Count(p =>
-                p.Status == ProjectStatus.Cancelled && p.UpdatedAt >= firstDayOfMonth);
+            // 4. Tỉ lệ chuyển đổi (Conversion Rate)
+            int totalBooked = projects.Count;
+            int totalPaid = paidProjectIds.Count;
+            double conversionRate = totalBooked > 0 ? (double)totalPaid / totalBooked * 100 : 0;
 
-            // Người dùng
-            var photographerRoleId = await _context.Roles
-                .Where(r => r.Name == "Photographer")
-                .Select(r => r.Id)
-                .FirstOrDefaultAsync();
+            // 5. Phân bổ theo Package
+            var revenueByPackage = payments
+                .GroupBy(p => p.Project?.Package?.Name ?? "Dịch vụ khác")
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
 
-            var userRoleId = await _context.Roles
-                .Where(r => r.Name == "User")
-                .Select(r => r.Id)
-                .FirstOrDefaultAsync();
+            var projectsByPackage = projects
+                .GroupBy(p => p.Package?.Name ?? "Dịch vụ khác")
+                .ToDictionary(g => g.Key, g => g.Count());
 
-            var totalPhotographers = await _context.Users.CountAsync(u => u.RoleId == photographerRoleId);
+            // 6. Thống kê người dùng
+            var userRoleId = await _context.Roles.Where(r => r.Name == "User").Select(r => r.Id).FirstOrDefaultAsync();
+            var photographerRoleId = await _context.Roles.Where(r => r.Name == "Photographer").Select(r => r.Id).FirstOrDefaultAsync();
+            
             var totalCustomers = await _context.Users.CountAsync(u => u.RoleId == userRoleId);
-            var newCustomersThisMonth = await _context.Users
-                .CountAsync(u => u.RoleId == userRoleId && u.CreatedAt >= firstDayOfMonth);
-
-            // Gói dịch vụ
-            var activePackages = await _context.Packages.CountAsync(p => p.IsActive);
+            var totalPhotographers = await _context.Users.CountAsync(u => u.RoleId == photographerRoleId);
+            var newCustomersThisMonth = await _context.Users.CountAsync(u => u.RoleId == userRoleId && u.CreatedAt >= firstDayOfMonth);
 
             return new DashboardStatsDTO
             {
+                // Projects
                 TotalProjects        = projects.Count,
                 ProjectsInProduction = projects.Count(p => p.Status == ProjectStatus.InProduction),
                 ProjectsScheduled    = projects.Count(p => p.Status == ProjectStatus.Scheduled),
                 ProjectsCompleted    = projects.Count(p => p.Status == ProjectStatus.Completed),
                 ProjectsCancelled    = projects.Count(p => p.Status == ProjectStatus.Cancelled),
+                
+                // Revenue & Growth
                 TotalRevenue         = totalRevenue,
                 RevenueThisMonth     = revenueThisMonth,
                 RevenueLastMonth     = revenueLastMonth,
+                RevenueGrowth        = Math.Round(revenueGrowth, 1),
+                AverageOrderValue    = Math.Round(averageOrderValue, 0),
+
+                // Analysis
+                ConversionRate       = Math.Round(conversionRate, 1),
+                RevenueByPackage     = revenueByPackage,
+                ProjectsByCategory   = projectsByPackage, // Using Package breakdown as Category breakdown
+
+                // Users
                 TotalCustomers       = totalCustomers,
-                TotalStaff           = totalPhotographers, // Giữ tên thuộc tính DTO nhưng gán giá trị photographer
+                TotalStaff           = totalPhotographers, 
                 NewCustomersThisMonth = newCustomersThisMonth,
-                TotalBookings        = projects.Count(p =>
-                    p.Status == ProjectStatus.Scheduled || p.Status == ProjectStatus.InProduction),
-                BookingsThisMonth    = bookingsThisMonth,
-                CancelledThisMonth   = cancelledThisMonth,
-                TotalActivePackages  = activePackages,
+
+                // Bookings
+                TotalBookings        = projects.Count(p => p.Status != ProjectStatus.Cancelled),
+                BookingsThisMonth    = projects.Count(p => p.CreatedAt >= firstDayOfMonth),
+                CancelledThisMonth   = projects.Count(p => p.Status == ProjectStatus.Cancelled && p.UpdatedAt >= firstDayOfMonth),
+                
+                TotalActivePackages  = await _context.Packages.CountAsync(p => p.IsActive),
                 GeneratedAt          = DateTime.UtcNow
             };
         }
@@ -94,19 +111,19 @@ namespace Aura.Infrastructure.Services
             var cutoff = DateTime.UtcNow.AddMonths(-months + 1);
             var firstOfCutoff = new DateTime(cutoff.Year, cutoff.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            var completedProjects = await _context.Projects
-                .Where(p => p.Status == ProjectStatus.Completed
-                         && p.UpdatedAt >= firstOfCutoff)
+            var completedPayments = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Completed
+                         && p.CreatedAt >= firstOfCutoff)
                 .ToListAsync();
 
-            var result = completedProjects
-                .GroupBy(p => new { p.UpdatedAt.Year, p.UpdatedAt.Month })
+            var result = completedPayments
+                .GroupBy(p => new { p.CreatedAt.Year, p.CreatedAt.Month })
                 .Select(g => new MonthlyRevenueDTO
                 {
                     Year         = g.Key.Year,
                     Month        = g.Key.Month,
-                    Revenue      = g.Sum(p => p.Revenue),
-                    ProjectCount = g.Count()
+                    Revenue      = g.Sum(p => p.Amount),
+                    ProjectCount = g.Select(p => p.ProjectId).Distinct().Count()
                 })
                 .OrderBy(r => r.Year).ThenBy(r => r.Month)
                 .ToList();
@@ -115,7 +132,7 @@ namespace Aura.Infrastructure.Services
         }
 
         // ─── 3. Hiệu suất photographer ─────────────────────────────────────
-        public async Task<IEnumerable<StaffPerformanceDTO>> GetStaffPerformanceAsync()
+        public async Task<IEnumerable<PhotographerPerformanceDTO>> GetPhotographerPerformanceAsync()
         {
             var photographerRoleId = await _context.Roles
                 .Where(r => r.Name == "Photographer")
@@ -133,10 +150,10 @@ namespace Aura.Infrastructure.Services
             var result = photographers.Select(ph =>
             {
                 var phProjects = projects.Where(p => p.StaffId == ph.Id).ToList();
-                return new StaffPerformanceDTO
+                return new PhotographerPerformanceDTO
                 {
-                    StaffId      = ph.Id,
-                    StaffName    = ph.FullName,
+                    PhotographerId      = ph.Id,
+                    PhotographerName    = ph.FullName,
                     TotalAssigned = phProjects.Count,
                     Completed    = phProjects.Count(p => p.Status == ProjectStatus.Completed),
                     InProgress   = phProjects.Count(p =>

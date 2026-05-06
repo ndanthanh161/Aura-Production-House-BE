@@ -135,6 +135,42 @@ namespace Aura.API.Controllers
         }
 
         /// <summary>
+        /// Get Cloudinary signature for direct upload
+        /// </summary>
+        [HttpGet("upload-signature")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetUploadSignature([FromQuery] string folder = "portfolio")
+        {
+            var signature = _portfolioService.GetUploadSignature(folder);
+            return Ok(ApiResponse<object>.SuccessResponse(signature));
+        }
+
+        /// <summary>
+        /// Save media info after direct upload to Cloudinary
+        /// </summary>
+        [HttpPost("{id}/media-direct")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddMediaDirect(Guid id, [FromBody] DirectUploadRequest request)
+        {
+            try
+            {
+                var media = await _portfolioService.AddMediaDirectAsync(id, request.Url, request.PublicId, request.MediaType);
+                return Ok(ApiResponse<PortfolioMediaResponseDTO>.SuccessResponse(media, "Media info saved."));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message, 400));
+            }
+        }
+
+        public class DirectUploadRequest
+        {
+            public string Url { get; set; } = string.Empty;
+            public string PublicId { get; set; } = string.Empty;
+            public string MediaType { get; set; } = string.Empty;
+        }
+
+        /// <summary>
         /// Delete a specific media file from portfolio item
         /// </summary>
         [HttpDelete("media/{mediaId}")]

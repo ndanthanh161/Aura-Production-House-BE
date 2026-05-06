@@ -1,10 +1,9 @@
 namespace Aura.Application.DTOs.Statistics
 {
-    /// <summary>Hiệu suất của từng nhân viên photographer</summary>
-    public class StaffPerformanceDTO
+    public class PhotographerPerformanceDTO
     {
-        public Guid StaffId { get; set; }
-        public string StaffName { get; set; } = string.Empty;
+        public Guid PhotographerId { get; set; }
+        public string PhotographerName { get; set; } = string.Empty;
         public int TotalAssigned { get; set; }
         public int Completed { get; set; }
         public int InProgress { get; set; }

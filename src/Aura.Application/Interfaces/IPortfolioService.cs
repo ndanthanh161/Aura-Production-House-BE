@@ -13,6 +13,8 @@ namespace Aura.Application.Interfaces
         Task<bool> TogglePublishAsync(Guid id);
         Task<bool> DeleteAsync(Guid id);
         Task<PortfolioMediaResponseDTO> UploadMediaAsync(Guid portfolioItemId, IFormFile file);
+        Task<PortfolioMediaResponseDTO> AddMediaDirectAsync(Guid portfolioItemId, string url, string publicId, string mediaType);
         Task<bool> DeleteMediaAsync(Guid mediaId);
+        object GetUploadSignature(string folder = "portfolio");
     }
 }

@@ -245,13 +245,53 @@ namespace Aura.Infrastructure.Services
                     {
                         string subject = $"[AURA] Xác nhận thanh toán thành công: {package.Name}";
                         string body = $@"
-                            <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
-                                <h2>AURA PRODUCTION HOUSE</h2>
-                                <p>Chào <strong>{user.FullName}</strong>,</p>
-                                <p>Hệ thống đã ghi nhận khoản thanh toán <strong>{amount:N0} VNĐ</strong> cho dự án <strong>{project.Name}</strong>.</p>
-                                <p>Mã giao dịch: <strong>{transactionId}</strong></p>
-                                <p>Dự án của bạn đã được chuyển sang trạng thái <strong>Đang thực hiện</strong>. Chúng tôi sẽ sớm liên hệ với bạn.</p>
-                                <p>Trân trọng,<br/>Aura Team</p>
+                            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
+                                <div style='border-bottom: 2px solid #ADFF00; padding-bottom: 10px; margin-bottom: 20px;'>
+                                    <h2 style='margin: 0; color: #000;'>AURA PRODUCTION HOUSE</h2>
+                                </div>
+                                
+                                <p>Kính gửi <strong>{user.FullName}</strong>,</p>
+                                
+                                <p>Hệ thống đã ghi nhận khoản thanh toán thành công cho dự án <strong>{project.Name}</strong>.</p>
+                                <p>Dự án của bạn đã được chuyển sang trạng thái <strong>Đang thực hiện (In Production)</strong>. Đội ngũ AURA sẽ bắt đầu triển khai các bước tiếp theo ngay lập tức.</p>
+                                
+                                <div style='background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;'>
+                                    <h4 style='margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;'>Chi tiết thanh toán</h4>
+                                    <table style='width: 100%; border-collapse: collapse;'>
+                                        <tr>
+                                            <td style='padding: 8px 0; color: #666;'>Tên dự án:</td>
+                                            <td style='padding: 8px 0;'><strong>{project.Name}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 8px 0; color: #666;'>Gói dịch vụ:</td>
+                                            <td style='padding: 8px 0;'>{package.Name}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 8px 0; color: #666;'>Số tiền đã nhận:</td>
+                                            <td style='padding: 8px 0;'><span style='color: #071FD9; font-weight: 700;'>{amount:N0} VNĐ</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 8px 0; color: #666;'>Mã giao dịch:</td>
+                                            <td style='padding: 8px 0; font-family: monospace;'>{transactionId}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style='padding: 8px 0; color: #666;'>Thời gian:</td>
+                                            <td style='padding: 8px 0;'>{DateTime.UtcNow.AddHours(7):dd/MM/yyyy HH:mm}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <p>Chúng tôi sẽ sớm liên hệ trực tiếp với quý khách để cập nhật tiến độ sản xuất.</p>
+                                
+                                <p>Cảm ơn quý khách đã tin tưởng và lựa chọn dịch vụ của AURA.</p>
+                                
+                                <p style='margin-top: 40px;'>Trân trọng,<br />
+                                <strong>Ban quản trị AURA</strong></p>
+                                
+                                <div style='margin-top: 50px; padding-top: 15px; border-top: 1px solid #eee; font-size: 11px; color: #999; text-align: center;'>
+                                    Đây là email thông báo tự động về giao dịch tài chính. Quý khách vui lòng lưu giữ email này để đối soát khi cần thiết.<br />
+                                    © 2024 Aura Production House.
+                                </div>
                             </div>";
                         await _mailService.SendEmailAsync(user.Email, subject, body);
                     }

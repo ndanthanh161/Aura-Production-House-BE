@@ -25,7 +25,7 @@ namespace Aura.Infrastructure.Repositories
         public async Task<PortfolioItem?> GetByIdAsync(Guid id)
         {
             return await _context.PortfolioItems
-                .Include(p => p.MediaItems.OrderBy(m => m.DisplayOrder))
+                .Include(p => p.MediaItems)
                 .Include(p => p.Project)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
@@ -33,7 +33,7 @@ namespace Aura.Infrastructure.Repositories
         public async Task<IEnumerable<PortfolioItem>> GetAllAsync()
         {
             return await _context.PortfolioItems
-                .Include(p => p.MediaItems.OrderBy(m => m.DisplayOrder))
+                .Include(p => p.MediaItems)
                 .OrderBy(p => p.DisplayOrder)
                 .ThenByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -43,7 +43,7 @@ namespace Aura.Infrastructure.Repositories
         {
             return await _context.PortfolioItems
                 .Where(p => p.IsPublished)
-                .Include(p => p.MediaItems.OrderBy(m => m.DisplayOrder))
+                .Include(p => p.MediaItems)
                 .OrderBy(p => p.DisplayOrder)
                 .ThenByDescending(p => p.CreatedAt)
                 .ToListAsync();

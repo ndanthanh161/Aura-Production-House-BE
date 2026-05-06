@@ -43,15 +43,15 @@ namespace Aura.API.Controllers
                 revenue, "Lấy dữ liệu doanh thu thành công."));
         }
 
-        // GET api/v1/statistics/staff-performance
-        /// <summary>Hiệu suất từng photographer/staff (Admin only)</summary>
-        [HttpGet("staff-performance")]
+        // GET api/v1/statistics/photographer-performance
+        /// <summary>Hiệu suất từng photographer (Admin only)</summary>
+        [HttpGet("photographer-performance")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<StaffPerformanceDTO>>>> GetStaffPerformance()
+        public async Task<ActionResult<ApiResponse<IEnumerable<PhotographerPerformanceDTO>>>> GetPhotographerPerformance()
         {
-            var performance = await _statisticsService.GetStaffPerformanceAsync();
-            return Ok(ApiResponse<IEnumerable<StaffPerformanceDTO>>.SuccessResponse(
-                performance, "Lấy thống kê hiệu suất nhân viên thành công."));
+            var performance = await _statisticsService.GetPhotographerPerformanceAsync();
+            return Ok(ApiResponse<IEnumerable<PhotographerPerformanceDTO>>.SuccessResponse(
+                performance, "Lấy thống kê hiệu suất photographer thành công."));
         }
     }
 }

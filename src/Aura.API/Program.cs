@@ -1,6 +1,8 @@
 using Aura.Application;
 using Aura.Infrastructure;
-using Infrastructure.Data;
+using Aura.Infrastructure.Middlewares;
+using Aura.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 
@@ -54,11 +56,14 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // CORS
+var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() 
+                    ?? new[] { "http://localhost:5173", "http://localhost:5174" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -71,8 +76,27 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Seed initial data
-await DataSeeder.SeedAsync(app.Services);
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Auto Migration & Seed initial data
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<Aura.Infrastructure.Data.AppDbContext>();
+        if (context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
+        await DataSeeder.SeedAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -80,9 +104,25 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts(); // Force HTTPS in production
+}
+
+// Security Headers Middleware
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self'; connect-src 'self' https://localhost:7283 https://*.ngrok-free.app;");
+    await next();
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+app.UseMiddleware<RedisRateLimitingMiddleware>();
 app.UseAuthentication();  // Before UseAuthorization
 app.UseAuthorization();
 app.MapControllers();

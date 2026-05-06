@@ -9,6 +9,8 @@ namespace Aura.Domain.Entity
         public Guid RoleId { get; set; }
         public string? Phone { get; set; }
         public string? Avatar { get; set; }
+        public string? Bio { get; set; } // Giới thiệu bản thân
+        public string? Specialization { get; set; } // Chuyên môn (ví dụ: Chụp ảnh cưới, Sự kiện)
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
