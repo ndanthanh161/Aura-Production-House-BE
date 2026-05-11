@@ -1,0 +1,33 @@
+name: Build and Deploy Backend
+
+on:
+  push:
+    branches: [ "main" ] # Hoặc branch chính của bạn
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: |
+          az acr login --name aura01registry
+
+      - name: Build and push image to ACR
+        run: |
+          docker build -t aura01registry.azurecr.io/aura-api:${{ github.sha }} .
+          docker push aura01registry.azurecr.io/aura-api:${{ github.sha }}
+
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: aura01registry.azurecr.io/aura-api:${{ github.sha }}
+          containerAppName: aura-api
+          resourceGroup: AuraProduction_RG
