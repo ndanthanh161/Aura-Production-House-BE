@@ -139,4 +139,38 @@ public class AuthController : ControllerBase
 
         return Ok(ApiResponse<object>.SuccessResponse(data, "User info retrieved successfully."));
     }
+
+    /// <summary>
+    /// Request an OTP for password reset
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Invalid email.", 400));
+        }
+
+        var result = await _authService.ForgotPasswordAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    /// <summary>
+    /// Reset password using OTP
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Validation failed.", 400));
+        }
+
+        var result = await _authService.ResetPasswordAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
 }

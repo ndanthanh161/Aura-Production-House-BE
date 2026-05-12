@@ -99,7 +99,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Enable Swagger in Development or if explicitly enabled via config
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -117,8 +118,14 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
     
-    // Updated CSP to allow Azure domains and new custom domain
-    context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self'; connect-src 'self' https://*.azurecontainerapps.io https://auraproduction.com.vn https://localhost:7283 https://*.ngrok-free.app;");
+    // Dynamic connect-src based on environment
+    var connectSrc = "connect-src 'self' https://*.azurecontainerapps.io https://auraproduction.com.vn https://*.ngrok-free.app";
+    if (app.Environment.IsDevelopment())
+    {
+        connectSrc += " http://localhost:7283 https://localhost:7283";
+    }
+
+    context.Response.Headers.Append("Content-Security-Policy", $"default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self'; {connectSrc};");
     await next();
 });
 

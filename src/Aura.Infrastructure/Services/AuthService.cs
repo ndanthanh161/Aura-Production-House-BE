@@ -4,6 +4,7 @@ using Aura.Application.Interfaces;
 using Aura.Domain.Entity;
 using Aura.Domain.Interfaces;
 using Google.Apis.Auth;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 
 namespace Aura.Infrastructure.Services;
@@ -15,7 +16,9 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IConfiguration _configuration;
     private readonly IRoleRepository _roleRepository;
-    private readonly ITokenBlacklistService _tokenBlacklistService; // ← THÊM
+    private readonly ITokenBlacklistService _tokenBlacklistService;
+    private readonly IDistributedCache _cache;
+    private readonly IMailService _mailService;
 
     public AuthService(
         IUserRepository userRepository,
@@ -23,7 +26,9 @@ public class AuthService : IAuthService
         IJwtTokenService jwtTokenService,
         IConfiguration configuration,
         IRoleRepository roleRepository,
-        ITokenBlacklistService tokenBlacklistService)
+        ITokenBlacklistService tokenBlacklistService,
+        IDistributedCache cache,
+        IMailService mailService)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -31,6 +36,8 @@ public class AuthService : IAuthService
         _configuration = configuration;
         _roleRepository = roleRepository;
         _tokenBlacklistService = tokenBlacklistService;
+        _cache = cache;
+        _mailService = mailService;
     }
 
     public async Task<ApiResponse<AuthResponse>> RegisterAsync(RegisterRequest request)
@@ -264,6 +271,74 @@ public class AuthService : IAuthService
         }
 
         return ApiResponse<object>.SuccessResponse(null!, "Logout successful.");
+    }
+
+    public async Task<ApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.Email.ToLower().Trim());
+        if (user == null)
+        {
+            // For security, don't reveal if email exists, but here the user asked to "check email tồn tại"
+            return ApiResponse<object>.ErrorResponse("Email does not exist in our system.", 404);
+        }
+
+        // Generate 6-digit OTP
+        var otp = new Random().Next(100000, 999999).ToString();
+
+        // Store in cache (5 minutes)
+        var cacheKey = $"otp:{user.Email}";
+        await _cache.SetStringAsync(cacheKey, otp, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        });
+
+        // Send email
+        var subject = "Aura Production House - Password Reset OTP";
+        var body = $@"
+            <div style='font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
+                <h2 style='color: #071fd9;'>Mã xác thực đổi mật khẩu</h2>
+                <p>Chào <b>{user.FullName}</b>,</p>
+                <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Aura. Mã OTP của bạn là:</p>
+                <div style='font-size: 24px; font-weight: bold; color: #071fd9; padding: 10px; background: #f0f2ff; display: inline-block; border-radius: 5px; letter-spacing: 5px;'>
+                    {otp}
+                </div>
+                <p style='margin-top: 20px;'>Mã này sẽ hết hạn trong vòng <b>5 phút</b>.</p>
+                <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+                <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
+                <p style='font-size: 12px; color: #888;'>Aura Production House - Creative Excellence</p>
+            </div>";
+
+        await _mailService.SendEmailAsync(user.Email, subject, body);
+
+        return ApiResponse<object>.SuccessResponse(null!, "OTP has been sent to your email.");
+    }
+
+    public async Task<ApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var cacheKey = $"otp:{request.Email.ToLower().Trim()}";
+        var storedOtp = await _cache.GetStringAsync(cacheKey);
+
+        if (storedOtp == null || storedOtp != request.Otp)
+        {
+            return ApiResponse<object>.ErrorResponse("Invalid or expired OTP.", 400);
+        }
+
+        var user = await _userRepository.GetByEmailAsync(request.Email.ToLower().Trim());
+        if (user == null)
+        {
+            return ApiResponse<object>.ErrorResponse("User not found.", 404);
+        }
+
+        // Update password
+        user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(user);
+
+        // Clear OTP from cache
+        await _cache.RemoveAsync(cacheKey);
+
+        return ApiResponse<object>.SuccessResponse(null!, "Password has been reset successfully.");
     }
 
 
