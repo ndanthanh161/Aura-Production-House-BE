@@ -174,17 +174,18 @@ namespace Aura.Infrastructure.Services
             };
             await _paymentRepository.AddAsync(payment);
 
-            // 5. Gửi email thông báo (tận dụng logic có sẵn)
-            _ = Task.Run(async () =>
+            // 5. Gửi email thông báo cho khách hàng và admin
+            try
             {
-                try
+                var user = await _userRepository.GetByIdAsync(project.ClientId);
+                var package = await _packageRepository.GetByIdAsync(project.PackageId);
+                if (user != null && package != null)
                 {
-                    var user = await _userRepository.GetByIdAsync(project.ClientId);
-                    var package = await _packageRepository.GetByIdAsync(project.PackageId);
-                    if (user != null && package != null)
+                    // === EMAIL CHO KHÁCH HÀNG ===
+                    if (!string.IsNullOrEmpty(user.Email))
                     {
-                        string subject = $"[AURA] Xác nhận thanh toán thành công: {package.Name}";
-                        string body = $@"
+                        string customerSubject = $"[AURA] Xác nhận thanh toán thành công: {package.Name}";
+                        string customerBody = $@"
                             <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
                                 <div style='border-bottom: 2px solid #ADFF00; padding-bottom: 10px; margin-bottom: 20px;'>
                                     <h2 style='margin: 0; color: #000;'>AURA PRODUCTION HOUSE</h2>
@@ -233,11 +234,67 @@ namespace Aura.Infrastructure.Services
                                     © 2024 Aura Production House.
                                 </div>
                             </div>";
-                        await _mailService.SendEmailAsync(user.Email, subject, body);
+                        await _mailService.SendEmailAsync(user.Email, customerSubject, customerBody);
                     }
+
+                    // === EMAIL CHO ADMIN ===
+                    const string adminEmail = "auraproduction21@gmail.com";
+                    string adminSubject = $"[AURA] Đơn hàng mới - Thanh toán thành công: {project.Name}";
+                    string adminBody = $@"
+                        <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
+                            <div style='border-bottom: 2px solid #ADFF00; padding-bottom: 10px; margin-bottom: 20px;'>
+                                <h2 style='margin: 0; color: #000;'>AURA PRODUCTION HOUSE - THÔNG BÁO ĐƠN HÀNG MỚI</h2>
+                            </div>
+                            
+                            <p>Xin chào Admin,</p>
+                            
+                            <p>Hệ thống vừa nhận được khoản thanh toán thành công từ khách hàng. Chi tiết như sau:</p>
+                            
+                            <div style='background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;'>
+                                <h4 style='margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;'>Thông tin đơn hàng</h4>
+                                <table style='width: 100%; border-collapse: collapse;'>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Tên dự án:</td>
+                                        <td style='padding: 8px 0;'><strong>{project.Name}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Khách hàng:</td>
+                                        <td style='padding: 8px 0;'><strong>{user.FullName}</strong> ({user.Email})</td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Gói dịch vụ:</td>
+                                        <td style='padding: 8px 0;'>{package.Name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Số tiền thanh toán:</td>
+                                        <td style='padding: 8px 0;'><span style='color: #071FD9; font-weight: 700;'>{amount:N0} VNĐ</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Mã giao dịch:</td>
+                                        <td style='padding: 8px 0; font-family: monospace;'>{transactionId}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 8px 0; color: #666;'>Thời gian thanh toán:</td>
+                                        <td style='padding: 8px 0;'>{DateTime.UtcNow.AddHours(7):dd/MM/yyyy HH:mm}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <p>Dự án đã được tự động chuyển sang trạng thái <strong>Đang thực hiện (In Production)</strong>. Vui lòng phân công photographer và liên hệ khách hàng sớm nhất.</p>
+                            
+                            <div style='margin-top: 50px; padding-top: 15px; border-top: 1px solid #eee; font-size: 11px; color: #999; text-align: center;'>
+                                Đây là email thông báo tự động từ hệ thống AURA.<br />
+                                © 2024 Aura Production House.
+                            </div>
+                        </div>";
+                    await _mailService.SendEmailAsync(adminEmail, adminSubject, adminBody);
                 }
-                catch { /* Ignore email failure */ }
-            });
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi nhưng không fail toàn bộ thanh toán
+                Console.WriteLine($"Failed to send payment confirmation emails: {ex.Message}");
+            }
 
             return true;
         }
