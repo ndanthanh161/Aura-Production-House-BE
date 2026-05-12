@@ -58,67 +58,7 @@ namespace Aura.Infrastructure.Services
 
             var createdProject = await _projectRepository.AddAsync(project);
 
-            // Send notification email
-            try
-            {
-                var user = await _userRepository.GetByIdAsync(request.ClientId);
-                if (user != null && !string.IsNullOrEmpty(user.Email))
-                {
-                    string subject = $"[AURA] Đặt lịch thành công - Chờ thanh toán: {package.Name}";
-                    string body = $@"
-                        <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px;'>
-                            <div style='border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;'>
-                                <h2 style='margin: 0; color: #000;'>AURA PRODUCTION HOUSE</h2>
-                            </div>
-                            
-                            <p>Kính gửi <strong>{user.FullName}</strong>,</p>
-                            
-                            <p>Yêu cầu đặt lịch cho gói <strong>{package.Name}</strong> đã được hệ thống ghi nhận.</p>
-                            <p>Vui lòng hoàn tất thanh toán bằng mã QR trên website để chúng tôi bắt đầu triển khai dự án.</p>
-                            
-                            <div style='background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;'>
-                                <h4 style='margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;'>Thông tin đơn hàng</h4>
-                                <table style='width: 100%; border-collapse: collapse;'>
-                                    <tr>
-                                        <td style='padding: 8px 0; color: #666;'>Tên dự án:</td>
-                                        <td style='padding: 8px 0;'><strong>{project.Name}</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding: 8px 0; color: #666;'>Gói dịch vụ:</td>
-                                        <td style='padding: 8px 0;'>{package.Name}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding: 8px 0; color: #666;'>Số tiền thanh toán:</td>
-                                        <td style='padding: 8px 0;'><strong>{project.Revenue:N0} VNĐ</strong> (100%)</td>
-                                    </tr>
-                                    <tr>
-                                        <td style='padding: 8px 0; color: #666;'>Thời gian:</td>
-                                        <td style='padding: 8px 0;'>{project.CreatedAt:dd/MM/yyyy HH:mm}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            
-                            <p>Đội ngũ của AURA sẽ sớm liên hệ trực tiếp với quý khách để trao đổi chi tiết về kế hoạch sản xuất.</p>
-                            
-                            <p>Nếu quý khách có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua số điện thoại hỗ trợ hoặc phản hồi trực tiếp email này.</p>
-                            
-                            <p style='margin-top: 40px;'>Trân trọng,<br />
-                            <strong>Ban quản trị AURA</strong></p>
-                            
-                            <div style='margin-top: 50px; padding-top: 15px; border-top: 1px solid #eee; font-size: 11px; color: #999; text-align: center;'>
-                                Đây là email thông báo tự động. Vui lòng không trả lời trực tiếp email này.<br />
-                                © 2024 Aura Production House.
-                            </div>
-                        </div>";
-
-                    await _mailService.SendEmailAsync(user.Email, subject, body);
-                }
-            }
-            catch (Exception ex)
-            {
-                // We don't want to fail the whole project creation if email fails
-                Console.WriteLine($"Failed to send confirmation email: {ex.Message}");
-            }
+            // Email sẽ chỉ được gửi khi thanh toán thành công (HandlePaymentSuccessAsync)
 
             return MapToDTO(createdProject);
         }

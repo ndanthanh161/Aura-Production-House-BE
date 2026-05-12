@@ -112,7 +112,7 @@ namespace Aura.Infrastructure.Repositories
                 project.Status == ProjectStatus.Cancelled) return null;
 
             project.Deadline = newShootingDate;
-            project.Status = ProjectStatus.Scheduled;
+            // Không đổi Status - chỉ cập nhật thời gian
             project.UpdatedAt = DateTime.UtcNow;
 
             _context.Projects.Update(project);
