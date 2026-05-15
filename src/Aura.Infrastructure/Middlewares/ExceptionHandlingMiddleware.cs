@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
+using Aura.Application.Common;
 
 namespace Aura.Infrastructure.Middlewares
 {
@@ -37,14 +38,10 @@ namespace Aura.Infrastructure.Middlewares
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var response = new
-            {
-                success = false,
-                statusCode = context.Response.StatusCode,
-                message = _env.IsDevelopment() ? exception.Message : "An internal server error occurred. Please try again later.",
-                details = _env.IsDevelopment() ? exception.StackTrace : null,
-                timestamp = DateTime.UtcNow
-            };
+            var message = _env.IsDevelopment() ? exception.Message : "An internal server error occurred. Please try again later.";
+            var errors = _env.IsDevelopment() ? new List<string> { exception.StackTrace ?? "" } : null;
+            
+            var response = ApiResponse<object>.ErrorResponse(message, 500, errors);
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));

@@ -23,14 +23,12 @@ namespace Aura.API.Controllers
         [HttpGet("info")]
         public IActionResult GetInfo()
         {
-            return Ok(new
-            {
-                data = new {
-                    bankId = _configuration["SePay:BankId"],
-                    accountNumber = _configuration["SePay:AccountNumber"],
-                    accountName = _configuration["SePay:AccountName"]
-                }
-            });
+            var data = new {
+                bankId = _configuration["SePay:BankId"],
+                accountNumber = _configuration["SePay:AccountNumber"],
+                accountName = _configuration["SePay:AccountName"]
+            };
+            return Ok(ApiResponse<object>.SuccessResponse(data, "SePay info retrieved."));
         }
 
         // POST api/v1/sepay/webhook
@@ -44,7 +42,7 @@ namespace Aura.API.Controllers
             // SePay sends "Bearer <API_KEY>"
             if (string.IsNullOrEmpty(expectedKey) || !authHeader.Contains(expectedKey))
             {
-                return Unauthorized(new { message = "Invalid SePay API Key" });
+                return Unauthorized(ApiResponse<object>.UnauthorizedResponse("Invalid SePay API Key"));
             }
 
             // 2. Extract Project ID from content
@@ -56,7 +54,7 @@ namespace Aura.API.Controllers
             if (projectId == Guid.Empty)
             {
                 Console.WriteLine($"[SePay Webhook] ERROR: Could not extract Project ID from content: {content}");
-                return BadRequest(new { message = "Could not find Project ID in transaction content" });
+                return BadRequest(ApiResponse<object>.ErrorResponse("Could not find Project ID in transaction content"));
             }
 
             // 3. Handle Payment
@@ -68,11 +66,11 @@ namespace Aura.API.Controllers
             if (!result)
             {
                 Console.WriteLine($"[SePay Webhook] ERROR: HandlePaymentSuccessAsync failed for Project ID: {projectId}");
-                return NotFound(new { message = "Project not found or update failed" });
+                return NotFound(ApiResponse<object>.NotFoundResponse(ErrorMessages.ProjectNotFound));
             }
 
             Console.WriteLine($"[SePay Webhook] SUCCESS: Project {projectId} updated to InProduction");
-            return Ok(new { success = true });
+            return Ok(ApiResponse<object>.SuccessResponse(new { success = true }, "Payment processed successfully."));
         }
 
         private Guid ExtractProjectId(string content)

@@ -49,6 +49,16 @@ namespace Aura.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<PortfolioItem>> GetTopHotPublishedAsync(int limit)
+        {
+            return await _context.PortfolioItems
+                .Where(p => p.IsPublished)
+                .OrderByDescending(p => p.IsHot)
+                .ThenByDescending(p => p.CreatedAt)
+                .Take(limit)
+                .ToListAsync();
+        }
+
         public async Task<PortfolioItem> UpdateAsync(PortfolioItem item)
         {
             _context.PortfolioItems.Update(item);

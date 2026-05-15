@@ -8,6 +8,7 @@ namespace Aura.Domain.Interfaces
         Task<PortfolioItem?> GetByIdAsync(Guid id);
         Task<IEnumerable<PortfolioItem>> GetAllAsync();
         Task<IEnumerable<PortfolioItem>> GetPublishedAsync();
+        Task<IEnumerable<PortfolioItem>> GetTopHotPublishedAsync(int limit);
         Task<PortfolioItem> UpdateAsync(PortfolioItem item);
         Task<bool> DeleteAsync(Guid id);
         Task AddMediaAsync(PortfolioMedia media);

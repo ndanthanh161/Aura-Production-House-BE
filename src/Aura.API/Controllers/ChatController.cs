@@ -1,10 +1,11 @@
+using Aura.Application.Common;
 using Aura.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
@@ -18,45 +19,45 @@ namespace Aura.API.Controllers
         public async Task<IActionResult> SendMessage([FromBody] ChatRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
-                return BadRequest("Message cannot be empty.");
+                return BadRequest(ApiResponse<object>.ErrorResponse("Message cannot be empty."));
 
             var response = await _chatService.ProcessMessageAsync(request.Message);
-            return Ok(new { response });
+            return Ok(ApiResponse<object>.SuccessResponse(new { response }, "AI response retrieved."));
         }
 
         [HttpPost("ingest")]
         public async Task<IActionResult> Ingest([FromBody] IngestRequest request)
         {
             await _chatService.IngestKnowledgeAsync(request.Content, request.Category);
-            return Ok("Knowledge ingested successfully.");
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Knowledge ingested successfully."));
         }
 
         [HttpGet("knowledge")]
         public async Task<IActionResult> GetKnowledge()
         {
             var knowledge = await _chatService.GetKnowledgeBaseAsync();
-            return Ok(knowledge);
+            return Ok(ApiResponse<object>.SuccessResponse(knowledge, "Knowledge base retrieved."));
         }
 
         [HttpDelete("knowledge/{id}")]
         public async Task<IActionResult> DeleteKnowledge(Guid id)
         {
             await _chatService.DeleteKnowledgeAsync(id);
-            return Ok("Knowledge deleted successfully.");
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Knowledge deleted successfully."));
         }
 
         [HttpGet("logs")]
         public async Task<IActionResult> GetLogs()
         {
             var logs = await _chatService.GetChatLogsAsync();
-            return Ok(logs);
+            return Ok(ApiResponse<object>.SuccessResponse(logs, "Chat logs retrieved."));
         }
 
         [HttpPost("logs/{id}/toggle-pin")]
         public async Task<IActionResult> TogglePin(Guid id)
         {
             await _chatService.ToggleChatLogPinAsync(id);
-            return Ok("Pin toggled successfully.");
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Pin toggled successfully."));
         }
     }
 

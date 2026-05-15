@@ -1,6 +1,6 @@
 using Aura.Application.Common;
-using Aura.Application.DTOs.Statistics;
 using Aura.Application.Interfaces;
+using Aura.Application.DTOs.Statistics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

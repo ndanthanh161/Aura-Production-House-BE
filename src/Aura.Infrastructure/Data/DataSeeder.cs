@@ -3,6 +3,8 @@ using Aura.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Aura.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
+
 
 namespace Aura.Infrastructure.Data;
 

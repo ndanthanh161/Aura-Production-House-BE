@@ -1,13 +1,14 @@
 using Aura.Application.Common;
 using Aura.Application.DTOs.Auth;
 using Aura.Application.Interfaces;
+using Aura.Application.Mappers;
 using Aura.Domain.Entity;
 using Aura.Domain.Interfaces;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 
-namespace Aura.Infrastructure.Services;
+namespace Aura.Application.Services;
 
 public class AuthService : IAuthService
 {
@@ -16,9 +17,11 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IConfiguration _configuration;
     private readonly IRoleRepository _roleRepository;
+    private readonly IMailService _mailService;
+    private readonly IEmailTemplateService _templateService;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenBlacklistService _tokenBlacklistService;
     private readonly IDistributedCache _cache;
-    private readonly IMailService _mailService;
 
     public AuthService(
         IUserRepository userRepository,
@@ -28,7 +31,9 @@ public class AuthService : IAuthService
         IRoleRepository roleRepository,
         ITokenBlacklistService tokenBlacklistService,
         IDistributedCache cache,
-        IMailService mailService)
+        IMailService mailService,
+        IEmailTemplateService templateService,
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -38,6 +43,8 @@ public class AuthService : IAuthService
         _tokenBlacklistService = tokenBlacklistService;
         _cache = cache;
         _mailService = mailService;
+        _templateService = templateService;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<ApiResponse<AuthResponse>> RegisterAsync(RegisterRequest request)
@@ -46,28 +53,18 @@ public class AuthService : IAuthService
         if (await _userRepository.ExistsByEmailAsync(request.Email))
         {
             return ApiResponse<AuthResponse>.ErrorResponse(
-                "Email is already registered.",
+                ErrorMessages.DuplicateEmail,
                 409,
                 new List<string> { "DUPLICATE_EMAIL" }
             );
         }
 
         // 2. Hash password
-        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var hashedPassword = _passwordHasher.HashPassword(request.Password);
 
-        // 3. Tìm Role "Customer" (default role khi đăng ký)
-        // Bạn có thể thay đổi logic này tùy theo DataSeeder
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            FullName = request.FullName,
-            Email = request.Email.ToLower().Trim(),
-            Password = hashedPassword,
-            Phone = request.Phone,
-            RoleId = await GetDefaultRoleIdAsync(),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+
+        var roleId = await GetDefaultRoleIdAsync();
+        var user = UserMapper.ToEntityFromRegister(request, roleId, hashedPassword);
 
         // 4. Save user
         var createdUser = await _userRepository.CreateAsync(user);
@@ -100,20 +97,21 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEmailAsync(request.Email.ToLower().Trim());
         if (user == null)
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Invalid email or password.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.InvalidEmailOrPassword);
         }
 
         // Kiểm tra tài khoản có bị khóa không
         if (!user.IsActive)
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Your account has been deactivated. Please contact support.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.AccountDeactivated);
         }
 
         // 2. Verify password
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+        if (!_passwordHasher.VerifyPassword(request.Password, user.Password))
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Invalid email or password.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.InvalidEmailOrPassword);
         }
+
 
         // 3. Generate tokens
         var accessToken = _jwtTokenService.GenerateAccessToken(user);
@@ -156,7 +154,7 @@ public class AuthService : IAuthService
         }
         catch (InvalidJwtException)
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Invalid Google token.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.InvalidGoogleToken);
         }
 
         // 2. Find or create user
@@ -165,26 +163,14 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            // Auto-register user from Google account
-            user = new User
-            {
-                Id = Guid.NewGuid(),
-                FullName = payload.Name ?? payload.Email,
-                Email = email,
-                Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Random password (won't be used)
-                Avatar = payload.Picture,
-                RoleId = await GetDefaultRoleIdAsync(),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            user = await _userRepository.CreateAsync(user);
+            user = await CreateUserFromGoogleAsync(payload, email);
         }
+
 
         // Kiểm tra tài khoản có bị khóa không
         if (!user.IsActive)
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Your account has been deactivated. Please contact support.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.AccountDeactivated);
         }
 
         // 3. Generate JWT tokens
@@ -216,14 +202,14 @@ public class AuthService : IAuthService
         var storedToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
         if (storedToken == null)
         {
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Invalid refresh token.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.InvalidRefreshToken);
         }
 
         // 2. Check if expired
         if (storedToken.ExpiresAt < DateTime.UtcNow)
         {
             await _refreshTokenRepository.DeleteAsync(storedToken);
-            return ApiResponse<AuthResponse>.UnauthorizedResponse("Refresh token has expired. Please login again.");
+            return ApiResponse<AuthResponse>.UnauthorizedResponse(ErrorMessages.ExpiredRefreshToken);
         }
 
         // 3. Delete old refresh token
@@ -294,19 +280,7 @@ public class AuthService : IAuthService
 
         // Send email
         var subject = "Aura Production House - Password Reset OTP";
-        var body = $@"
-            <div style='font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
-                <h2 style='color: #071fd9;'>Mã xác thực đổi mật khẩu</h2>
-                <p>Chào <b>{user.FullName}</b>,</p>
-                <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Aura. Mã OTP của bạn là:</p>
-                <div style='font-size: 24px; font-weight: bold; color: #071fd9; padding: 10px; background: #f0f2ff; display: inline-block; border-radius: 5px; letter-spacing: 5px;'>
-                    {otp}
-                </div>
-                <p style='margin-top: 20px;'>Mã này sẽ hết hạn trong vòng <b>5 phút</b>.</p>
-                <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
-                <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
-                <p style='font-size: 12px; color: #888;'>Aura Production House - Creative Excellence</p>
-            </div>";
+        var body = _templateService.GetOtpEmailTemplate(user.FullName, otp);
 
         await _mailService.SendEmailAsync(user.Email, subject, body);
 
@@ -320,17 +294,17 @@ public class AuthService : IAuthService
 
         if (storedOtp == null || storedOtp != request.Otp)
         {
-            return ApiResponse<object>.ErrorResponse("Invalid or expired OTP.", 400);
+            return ApiResponse<object>.ErrorResponse(ErrorMessages.InvalidOrExpiredOtp, 400);
         }
 
         var user = await _userRepository.GetByEmailAsync(request.Email.ToLower().Trim());
         if (user == null)
         {
-            return ApiResponse<object>.ErrorResponse("User not found.", 404);
+            return ApiResponse<object>.ErrorResponse(ErrorMessages.UserNotFound, 404);
         }
 
         // Update password
-        user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.Password = _passwordHasher.HashPassword(request.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(user);
@@ -343,6 +317,17 @@ public class AuthService : IAuthService
 
 
     // ===== Private Helpers =====
+
+    private async Task<User> CreateUserFromGoogleAsync(GoogleJsonWebSignature.Payload payload, string email)
+    {
+        var randomHashedPassword = _passwordHasher.HashPassword(Guid.NewGuid().ToString());
+        var roleId = await GetDefaultRoleIdAsync();
+        
+        var user = UserMapper.ToEntityFromGoogle(payload, email, roleId, randomHashedPassword);
+
+
+        return await _userRepository.CreateAsync(user);
+    }
 
     private async Task SaveRefreshTokenAsync(Guid userId, string token)
     {
@@ -368,4 +353,3 @@ public class AuthService : IAuthService
         return role.Id;
     }
 }
-

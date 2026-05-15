@@ -1,3 +1,4 @@
+using Aura.Application.Common;
 using Aura.Application.Interfaces;
 using Aura.Domain.Interfaces;
 using Aura.Infrastructure.Data;
@@ -62,23 +63,19 @@ public static class DependencyInjection
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         services.AddScoped<IContactMessageRepository, ContactMessageRepository>();
+        services.AddScoped<IKnowledgeRepository, KnowledgeRepository>();
+        services.AddScoped<IChatLogRepository, ChatLogRepository>();
+        services.AddScoped<IStatisticsRepository, StatisticsRepository>();
 
         // ===== Services =====
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>(); // ← THÊM
-        services.AddScoped<IPackageService, PackageService>();
-        services.AddScoped<IProjectService, ProjectService>();
-        services.AddScoped<IPhotographerService, PhotographerService>();
-        services.AddScoped<ICustomerService, CustomerService>();
-        services.AddScoped<IStatisticsService, StatisticsService>();
+        services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>();
 
         // ===== Cloudinary =====
         services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
         services.AddScoped<ICloudinaryService, CloudinaryService>();
 
-        // ===== Portfolio =====
-        services.AddScoped<IPortfolioService, PortfolioService>();
 
         // ===== Mail Service =====
         services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
@@ -86,9 +83,7 @@ public static class DependencyInjection
 
         // ===== AI Chatbot (RAG) =====
         services.Configure<AiSettings>(configuration.GetSection("AiSettings"));
-        services.AddHttpClient<IAiService, AiService>();
-        services.AddScoped<IChatService, ChatService>();
-        services.AddScoped<IContactMessageService, ContactMessageService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
         // ===== JWT Authentication =====
         var jwtSettings = configuration.GetSection("JwtSettings");
@@ -135,14 +130,7 @@ public static class DependencyInjection
                     context.Response.StatusCode = 401;
                     context.Response.ContentType = "application/json";
 
-                    var response = new
-                    {
-                        success = false,
-                        statusCode = 401,
-                        message = "Unauthorized. Token is missing or invalid.",
-                        timestamp = DateTime.UtcNow
-                    };
-
+                    var response = ApiResponse<object>.UnauthorizedResponse("Unauthorized. Token is missing or invalid.");
                     return context.Response.WriteAsJsonAsync(response);
                 },
                 OnForbidden = context =>
@@ -150,14 +138,7 @@ public static class DependencyInjection
                     context.Response.StatusCode = 403;
                     context.Response.ContentType = "application/json";
 
-                    var response = new
-                    {
-                        success = false,
-                        statusCode = 403,
-                        message = "Forbidden. You do not have permission to access this resource.",
-                        timestamp = DateTime.UtcNow
-                    };
-
+                    var response = ApiResponse<object>.ForbiddenResponse("Forbidden. You do not have permission to access this resource.");
                     return context.Response.WriteAsJsonAsync(response);
                 }
             };
