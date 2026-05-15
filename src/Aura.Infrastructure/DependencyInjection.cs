@@ -37,8 +37,15 @@ public static class DependencyInjection
 
         // ===== Redis =====
         var redisConn = configuration.GetConnectionString("Redis") ?? "localhost:6379";
-        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => 
-            StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
+        
+        // Cấu hình Redis linh hoạt hơn: Không sập app nếu lỗi kết nối ban đầu
+        var redisOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConn);
+        redisOptions.AbortOnConnectFail = false; 
+        redisOptions.ConnectRetry = 5;
+        redisOptions.ConnectTimeout = 10000; // 10 giây
+
+        var multiplexer = StackExchange.Redis.ConnectionMultiplexer.Connect(redisOptions);
+        services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(multiplexer);
 
         services.AddStackExchangeRedisCache(options =>
         {
