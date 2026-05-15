@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using StackExchange.Redis;
 using System.Net;
 using System.Text.Json;
+using Aura.Application.Common;
 
 namespace Aura.Infrastructure.Middlewares
 {
@@ -9,8 +10,8 @@ namespace Aura.Infrastructure.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly IDatabase _redis;
-        private const int Limit = 10; // Số request tối đa
-        private const int WindowSeconds = 30; // Trong vòng 30 giây
+        private const int Limit = 100; // Số request tối đa
+        private const int WindowSeconds = 60; // Trong vòng 60 giây
 
         public RedisRateLimitingMiddleware(RequestDelegate next, IConnectionMultiplexer redis)
         {
@@ -47,13 +48,9 @@ namespace Aura.Infrastructure.Middlewares
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                 context.Response.ContentType = "application/json";
 
-                var response = new
-                {
-                    success = false,
-                    statusCode = 429,
-                    message = $"Too many requests. Please try again after {WindowSeconds} seconds.",
-                    timestamp = DateTime.UtcNow
-                };
+                var response = ApiResponse<object>.ErrorResponse(
+                    $"Too many requests. Please try again after {WindowSeconds} seconds.", 
+                    429);
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
                 return;

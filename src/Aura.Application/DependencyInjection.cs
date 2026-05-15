@@ -1,13 +1,27 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Aura.Application.Interfaces;
+using Aura.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Aura.Application
+namespace Aura.Application;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        public static IServiceCollection AddApplication(this IServiceCollection services)
-        {
-            // Sau này đăng ký Services, AutoMapper, MediatR, FluentValidation ở đây
-            return services;
-        }
+        // ===== Business Services =====
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IPackageService, PackageService>();
+        services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IPhotographerService, PhotographerService>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IStatisticsService, StatisticsService>();
+        services.AddScoped<IPortfolioService, PortfolioService>();
+        services.AddScoped<IContactMessageService, ContactMessageService>();
+        
+        // ===== AI Services =====
+        services.AddHttpClient<IAiService, AiService>();
+        services.AddScoped<IChatService, ChatService>();
+
+        return services;
     }
 }

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Aura.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class ContactController : ControllerBase
     {
         private readonly IContactMessageService _contactService;
@@ -46,7 +46,7 @@ namespace Aura.API.Controllers
         public async Task<IActionResult> MarkAsRead(Guid id)
         {
             var result = await _contactService.MarkAsReadAsync(id);
-            if (!result) return NotFound(ApiResponse<object>.ErrorResponse("Message not found.", 404));
+            if (!result) return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.MessageNotFound, 404));
 
             return Ok(ApiResponse<object>.SuccessResponse(null!, "Message marked as read."));
         }

@@ -1,3 +1,4 @@
+using Aura.Application.Common;
 using Aura.Application.Interfaces;
 using Aura.Domain.Settings;
 using CloudinaryDotNet;
@@ -25,7 +26,7 @@ namespace Aura.Infrastructure.Services
         public async Task<(string Url, string PublicId)> UploadAsync(IFormFile file, string folder = "portfolio")
         {
             if (file.Length == 0)
-                throw new ArgumentException("File is empty.");
+                throw new ArgumentException(ErrorMessages.FileIsEmpty);
 
             using var stream = file.OpenReadStream();
             var isVideo = file.ContentType.StartsWith("video/");
@@ -41,7 +42,7 @@ namespace Aura.Infrastructure.Services
 
                 var result = await _cloudinary.UploadAsync(uploadParams);
                 if (result.Error != null)
-                    throw new Exception($"Cloudinary upload failed: {result.Error.Message}");
+                    throw new Exception(string.Format(ErrorMessages.CloudinaryUploadFailed, result.Error.Message));
 
                 return (result.SecureUrl.ToString(), result.PublicId);
             }
@@ -56,7 +57,7 @@ namespace Aura.Infrastructure.Services
 
                 var result = await _cloudinary.UploadAsync(uploadParams);
                 if (result.Error != null)
-                    throw new Exception($"Cloudinary upload failed: {result.Error.Message}");
+                    throw new Exception(string.Format(ErrorMessages.CloudinaryUploadFailed, result.Error.Message));
 
                 return (result.SecureUrl.ToString(), result.PublicId);
             }

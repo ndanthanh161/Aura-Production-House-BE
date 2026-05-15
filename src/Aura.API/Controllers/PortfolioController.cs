@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Aura.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class PortfolioController : ControllerBase
     {
         private readonly IPortfolioService _portfolioService;
@@ -37,7 +37,7 @@ namespace Aura.API.Controllers
         {
             var item = await _portfolioService.GetByIdAsync(id);
             if (item == null)
-                return NotFound(ApiResponse<object>.ErrorResponse("Portfolio item not found.", 404));
+                return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.PortfolioItemNotFound, 404));
 
             return Ok(ApiResponse<PortfolioItemResponseDTO>.SuccessResponse(item, "Portfolio item retrieved."));
         }
@@ -75,7 +75,7 @@ namespace Aura.API.Controllers
         {
             var item = await _portfolioService.UpdateAsync(request);
             if (item == null)
-                return NotFound(ApiResponse<object>.ErrorResponse("Portfolio item not found.", 404));
+                return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.PortfolioItemNotFound, 404));
 
             return Ok(ApiResponse<PortfolioItemResponseDTO>.SuccessResponse(item, "Portfolio item updated."));
         }
@@ -89,7 +89,7 @@ namespace Aura.API.Controllers
         {
             var result = await _portfolioService.TogglePublishAsync(id);
             if (!result)
-                return NotFound(ApiResponse<object>.ErrorResponse("Portfolio item not found.", 404));
+                return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.PortfolioItemNotFound, 404));
 
             return Ok(ApiResponse<object>.SuccessResponse(null!, "Publish status toggled."));
         }
@@ -103,7 +103,7 @@ namespace Aura.API.Controllers
         {
             var result = await _portfolioService.DeleteAsync(id);
             if (!result)
-                return NotFound(ApiResponse<object>.ErrorResponse("Portfolio item not found.", 404));
+                return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.PortfolioItemNotFound, 404));
 
             return Ok(ApiResponse<object>.SuccessResponse(null!, "Portfolio item deleted."));
         }
@@ -179,7 +179,7 @@ namespace Aura.API.Controllers
         {
             var result = await _portfolioService.DeleteMediaAsync(mediaId);
             if (!result)
-                return NotFound(ApiResponse<object>.ErrorResponse("Media not found.", 404));
+                return NotFound(ApiResponse<object>.ErrorResponse(ErrorMessages.MediaNotFound, 404));
 
             return Ok(ApiResponse<object>.SuccessResponse(null!, "Media deleted."));
         }
