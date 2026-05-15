@@ -52,40 +52,31 @@ public static class DataSeeder
         }
 
         // ==================== Seed Admin ====================
-        if (!await context.Users.AnyAsync(u => u.Email == "admin@auraproduction.com"))
-        {
-            var admin = new User
-            {
-                Id = Guid.NewGuid(),
-                FullName = "System Admin",
-                Email = "admin@auraproduction.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-                RoleId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                Phone = "0901234567",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var adminEmail = config["AdminSettings:Email"];
+        var adminPassword = config["AdminSettings:Password"];
 
-            await context.Users.AddAsync(admin);
+        if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
+        {
+            if (!await context.Users.AnyAsync(u => u.Email == adminEmail))
+            {
+                var admin = new User
+                {
+                    Id = Guid.NewGuid(),
+                    FullName = "System Admin",
+                    Email = adminEmail,
+                    Password = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                    RoleId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Phone = "0901234567",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await context.Users.AddAsync(admin);
+                await context.SaveChangesAsync();
+            }
         }
 
-        // ==================== Seed Photographer ====================
-        if (!await context.Users.AnyAsync(u => u.Email == "photo@auraproduction.com"))
-        {
-            var photographer = new User
-            {
-                Id = Guid.NewGuid(),
-                FullName = "Aura Photographer",
-                Email = "photo@auraproduction.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Photo@123"),
-                RoleId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Phone = "0908888888",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            await context.Users.AddAsync(photographer);
-        }
         await context.SaveChangesAsync();
         
         // ==================== Seed Packages ====================
