@@ -1,5 +1,6 @@
 using Aura.Application.Interfaces;
 using Aura.Application.Mappers;
+using Aura.Application.DTOs.Chat;
 using Aura.Domain.Entity;
 using Aura.Domain.Enum;
 using Aura.Domain.Interfaces;
@@ -29,7 +30,7 @@ public class ChatService : IChatService
         _packageRepo = packageRepo;
     }
 
-    public async Task<string> ProcessMessageAsync(string message)
+    public async Task<string> ProcessMessageAsync(string message, List<ChatMessageDTO>? history = null)
     {
         var msgLower = message.ToLower();
 
@@ -131,7 +132,7 @@ public class ChatService : IChatService
         var contextString = string.Join("\n\n====================\n\n", contextParts);
 
         // 5. Get response from AI
-        var botResponse = await _aiService.GetChatResponseAsync(message, contextString);
+        var botResponse = await _aiService.GetChatResponseAsync(message, contextString, history);
 
         // 4. Save log to DB using Repository
         var log = ChatMapper.ToLogEntity(message, botResponse);

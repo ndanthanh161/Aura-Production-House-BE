@@ -1,5 +1,6 @@
 using Aura.Application.Common;
 using Aura.Application.Interfaces;
+using Aura.Application.DTOs.Chat;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.API.Controllers
@@ -21,7 +22,7 @@ namespace Aura.API.Controllers
             if (string.IsNullOrWhiteSpace(request.Message))
                 return BadRequest(ApiResponse<object>.ErrorResponse("Message cannot be empty."));
 
-            var response = await _chatService.ProcessMessageAsync(request.Message);
+            var response = await _chatService.ProcessMessageAsync(request.Message, request.History);
             return Ok(ApiResponse<object>.SuccessResponse(new { response }, "AI response retrieved."));
         }
 
@@ -64,6 +65,7 @@ namespace Aura.API.Controllers
     public class ChatRequest
     {
         public string Message { get; set; } = string.Empty;
+        public List<ChatMessageDTO>? History { get; set; }
     }
 
     public class IngestRequest

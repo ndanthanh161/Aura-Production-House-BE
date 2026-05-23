@@ -1,4 +1,5 @@
 using Aura.Application.Interfaces;
+using Aura.Application.DTOs.Chat;
 using Aura.Domain.Settings;
 using Microsoft.Extensions.Options;
 using System.Text;
@@ -44,7 +45,7 @@ public class AiService : IAiService
         return result;
     }
 
-    public async Task<string> GetChatResponseAsync(string question, string context)
+    public async Task<string> GetChatResponseAsync(string question, string context, List<ChatMessageDTO>? history = null)
     {
         var url = "https://api.openai.com/v1/chat/completions";
 
@@ -52,7 +53,7 @@ public class AiService : IAiService
 QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 1. TUYỆT ĐỐI KHÔNG dùng ký hiệu Markdown (không dùng **, không dùng #, không dùng [ ]).
 2. TRÌNH BÀY: Dùng 2 lần xuống dòng (double newline) giữa các ý để tạo khoảng cách thoáng. Dùng dấu gạch ngang (-) đơn giản.
-3. PHONG CÁCH: Trả lời cực kỳ ngắn gọn (dưới 100 từ), chuyên nghiệp và súc tích.
+3. PHONG CÀCH: Chuyên nghiệp, súc tích và linh hoạt về độ dài. Khi khách hàng hỏi giới thiệu hoặc gợi ý sản phẩm, hãy trả lời ngắn gọn, cô đọng nhưng vẫn truyền tải đầy đủ ý nghĩa và nội dung chính của sản phẩm. Khi khách hàng yêu cầu phân tích, giải thích rõ hơn hoặc làm rõ chi tiết, hãy tự động trả lời chi tiết, đầy đủ và phân tích sâu sắc.
 4. CHIẾN THUẬT: Chọn 1 gói sát nhất với ngân sách khách đưa ra (ưu tiên gói cao nhất trong tầm tiền) và giải thích ngắn gọn lý do.
 5. QUY TẮC DỰ ÁN MẪU: Khi khách hỏi về ví dụ, mẫu hoặc muốn xem dự án đã làm, hãy liệt kê tên 2-3 dự án phù hợp nhất từ danh sách dự án thực tế được cung cấp bên dưới, nêu rõ Title và Category.
 6. QUY TẮC QUYỀN LỢI: AI phải biết rằng các gói giá cao hơn luôn bao gồm toàn bộ quyền lợi của các gói thấp tiền hơn. Hãy dùng điều này để thuyết phục khách nâng cấp gói.
@@ -61,14 +62,26 @@ QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
 Kiến thức Aura và Dự án thực tế:
 {context}";
 
+        var messagesList = new List<object>
+        {
+            new { role = "system", content = systemPrompt }
+        };
+
+        if (history != null)
+        {
+            foreach (var msg in history)
+            {
+                var apiRole = msg.Role.ToLower() == "bot" ? "assistant" : "user";
+                messagesList.Add(new { role = apiRole, content = msg.Text });
+            }
+        }
+
+        messagesList.Add(new { role = "user", content = question });
+
         var requestBody = new
         {
             model = _settings.Model,
-            messages = new[]
-            {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = question }
-            },
+            messages = messagesList.ToArray(),
             temperature = 0.7
         };
 
