@@ -82,19 +82,27 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var context = services.GetRequiredService<Aura.Infrastructure.Data.AppDbContext>();
-        if (context.Database.GetPendingMigrations().Any())
+        var pendingMigrations = context.Database.GetPendingMigrations().ToList();
+        if (pendingMigrations.Any())
         {
+            logger.LogInformation("Found {Count} pending migrations: {Migrations}. Applying now...", pendingMigrations.Count, string.Join(", ", pendingMigrations));
             context.Database.Migrate();
+            logger.LogInformation("Database migration completed successfully.");
+        }
+        else
+        {
+            logger.LogInformation("No pending database migrations found.");
         }
         await DataSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        logger.LogError(ex, "FATAL: An error occurred while migrating or seeding the database. Application startup stopped.");
+        throw; // Rethrow to make container crash and expose the exact SQL exception in logs
     }
 }
 

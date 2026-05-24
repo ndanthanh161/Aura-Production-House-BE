@@ -38,8 +38,9 @@ namespace Aura.Infrastructure.Middlewares
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var message = _env.IsDevelopment() ? exception.Message : "An internal server error occurred. Please try again later.";
-            var errors = _env.IsDevelopment() ? new List<string> { exception.StackTrace ?? "" } : null;
+            // HIỂN THỊ CHI TIẾT LỖI ĐỂ DEBUG TRÊN LIVE: Giúp bạn xem trực tiếp lỗi cụ thể là gì ở tab Network trên trình duyệt
+            var message = $"{exception.Message} (Inner: {exception.InnerException?.Message})";
+            var errors = new List<string> { exception.StackTrace ?? "" };
             
             var response = ApiResponse<object>.ErrorResponse(message, 500, errors);
 
