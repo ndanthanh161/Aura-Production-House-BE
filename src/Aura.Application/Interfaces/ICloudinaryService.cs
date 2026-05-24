@@ -13,7 +13,7 @@ namespace Aura.Application.Interfaces
         /// <summary>
         /// Delete file from Cloudinary by publicId
         /// </summary>
-        Task<bool> DeleteAsync(string publicId);
+        Task<bool> DeleteAsync(string publicId, string resourceType = "image");
 
         /// <summary>
         /// Generate a signature for client-side upload

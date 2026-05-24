@@ -22,7 +22,14 @@ namespace Aura.API.Controllers
             if (string.IsNullOrWhiteSpace(request.Message))
                 return BadRequest(ApiResponse<object>.ErrorResponse("Message cannot be empty."));
 
-            var response = await _chatService.ProcessMessageAsync(request.Message, request.History);
+            Guid? userId = null;
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedUserId))
+            {
+                userId = parsedUserId;
+            }
+
+            var response = await _chatService.ProcessMessageAsync(request.Message, request.History, userId);
             return Ok(ApiResponse<object>.SuccessResponse(new { response }, "AI response retrieved."));
         }
 

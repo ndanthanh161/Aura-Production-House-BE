@@ -83,6 +83,9 @@ public class AuthService : IAuthService
             FullName = createdUser.FullName,
             Email = createdUser.Email,
             Role = createdUser.Role.Name,
+            IsVip = createdUser.IsVip && createdUser.VipExpireAt.HasValue && createdUser.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = createdUser.VipExpireAt,
+            Avatar = createdUser.Avatar,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             AccessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpiration()
@@ -128,6 +131,9 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.Name,
+            IsVip = user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = user.VipExpireAt,
+            Avatar = user.Avatar,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             AccessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpiration()
@@ -188,6 +194,9 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.Name,
+            IsVip = user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = user.VipExpireAt,
+            Avatar = user.Avatar,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             AccessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpiration()
@@ -230,6 +239,9 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.Name,
+            IsVip = user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = user.VipExpireAt,
+            Avatar = user.Avatar,
             AccessToken = newAccessToken,
             RefreshToken = newRefreshToken,
             AccessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpiration()

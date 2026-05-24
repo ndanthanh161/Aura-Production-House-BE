@@ -15,22 +15,25 @@ public class ChatService : IChatService
     private readonly IChatLogRepository _chatLogRepo;
     private readonly IPortfolioRepository _portfolioRepo;
     private readonly IPackageRepository _packageRepo;
+    private readonly IUserRepository _userRepository;
 
     public ChatService(
         IAiService aiService, 
         IKnowledgeRepository knowledgeRepo, 
         IChatLogRepository chatLogRepo,
         IPortfolioRepository portfolioRepo,
-        IPackageRepository packageRepo)
+        IPackageRepository packageRepo,
+        IUserRepository userRepository)
     {
         _aiService = aiService;
         _knowledgeRepo = knowledgeRepo;
         _chatLogRepo = chatLogRepo;
         _portfolioRepo = portfolioRepo;
         _packageRepo = packageRepo;
+        _userRepository = userRepository;
     }
 
-    public async Task<string> ProcessMessageAsync(string message, List<ChatMessageDTO>? history = null)
+    public async Task<string> ProcessMessageAsync(string message, List<ChatMessageDTO>? history = null, Guid? userId = null)
     {
         var msgLower = message.ToLower();
 
@@ -41,6 +44,19 @@ public class ChatService : IChatService
         // 2. Search for relevant context in Knowledge Base using Repository (ALWAYS PRIORITIZED)
         var relevantContext = await _knowledgeRepo.SearchRelevantContentAsync(vector, 8);
         var contextParts = new List<string>();
+
+        if (userId.HasValue)
+        {
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            if (user != null && user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow)
+            {
+                contextParts.Add("[ĐẶC QUYỀN VIP - THÀNH VIÊN VIP AURA]\n" +
+                                 $"Khách hàng đang gửi tin nhắn này là THÀNH VIÊN VIP của Aura (gói VIP có hiệu lực đến {user.VipExpireAt.Value.ToString("dd/MM/yyyy")}). " +
+                                 "Bạn PHẢI chào mừng họ nhiệt liệt bằng sự tôn trọng và ưu ái đặc biệt nhất. " +
+                                 "Hãy xưng hô thân mật, gọi họ là 'Quý khách VIP' hoặc 'Thành viên VIP của Aura'. " +
+                                 "Tư vấn cho họ cực kỳ tận tâm, giới thiệu các dịch vụ cao cấp nhất và ý tưởng concept độc quyền mang tính nghệ thuật đột phá.");
+            }
+        }
 
         if (relevantContext != null && relevantContext.Any())
         {

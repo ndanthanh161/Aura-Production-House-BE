@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<IKnowledgeRepository, KnowledgeRepository>();
         services.AddScoped<IChatLogRepository, ChatLogRepository>();
         services.AddScoped<IStatisticsRepository, StatisticsRepository>();
+        services.AddScoped<IDocumentTemplateRepository, DocumentTemplateRepository>();
 
         // ===== Services =====
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

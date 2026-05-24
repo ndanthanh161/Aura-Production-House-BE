@@ -29,9 +29,26 @@ namespace Aura.Infrastructure.Services
                 throw new ArgumentException(ErrorMessages.FileIsEmpty);
 
             using var stream = file.OpenReadStream();
+            
+            var extension = System.IO.Path.GetExtension(file.FileName).ToLower();
+            var isRaw = extension == ".pdf" || extension == ".docx" || extension == ".doc";
             var isVideo = file.ContentType.StartsWith("video/");
 
-            if (isVideo)
+            if (isRaw)
+            {
+                var uploadParams = new RawUploadParams
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = $"aura/{folder}"
+                };
+
+                var result = await _cloudinary.UploadAsync(uploadParams);
+                if (result.Error != null)
+                    throw new Exception(string.Format(ErrorMessages.CloudinaryUploadFailed, result.Error.Message));
+
+                return (result.SecureUrl.ToString(), result.PublicId);
+            }
+            else if (isVideo)
             {
                 var uploadParams = new VideoUploadParams
                 {
@@ -63,9 +80,12 @@ namespace Aura.Infrastructure.Services
             }
         }
 
-        public async Task<bool> DeleteAsync(string publicId)
+        public async Task<bool> DeleteAsync(string publicId, string resourceType = "image")
         {
-            var deleteParams = new DeletionParams(publicId);
+            var deleteParams = new DeletionParams(publicId)
+            {
+                ResourceType = resourceType.ToLower() == "raw" ? ResourceType.Raw : (resourceType.ToLower() == "video" ? ResourceType.Video : ResourceType.Image)
+            };
             var result = await _cloudinary.DestroyAsync(deleteParams);
             return result.Result == "ok";
         }

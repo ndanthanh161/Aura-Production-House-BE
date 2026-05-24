@@ -20,6 +20,8 @@ public static class UserMapper
             Specialization = user.Specialization,
             Role = user.Role?.Name ?? string.Empty,
             IsActive = user.IsActive,
+            IsVip = user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = user.VipExpireAt,
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt
         };

@@ -1,6 +1,7 @@
 using Aura.Application.Common;
 using Aura.Application.DTOs.Auth;
 using Aura.Application.Interfaces;
+using Aura.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,10 +13,12 @@ namespace Aura.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IUserRepository _userRepository;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IUserRepository userRepository)
     {
         _authService = authService;
+        _userRepository = userRepository;
     }
 
     /// <summary>
@@ -122,19 +125,29 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        var fullName = User.FindFirstValue(ClaimTypes.Name);
-        var role = User.FindFirstValue(ClaimTypes.Role);
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            return Unauthorized(ApiResponse<object>.UnauthorizedResponse("User ID not found in token."));
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound(ApiResponse<object>.NotFoundResponse("User not found."));
+        }
 
         var data = new
         {
-            UserId = userId,
-            Email = email,
-            FullName = fullName,
-            Role = role
+            UserId = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Role = user.Role?.Name ?? "User",
+            IsVip = user.IsVip && user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow,
+            VipExpireAt = user.VipExpireAt,
+            Avatar = user.Avatar
         };
 
         return Ok(ApiResponse<object>.SuccessResponse(data, "User info retrieved successfully."));

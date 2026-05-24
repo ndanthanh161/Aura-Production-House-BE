@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<IPortfolioService, PortfolioService>();
         services.AddScoped<IContactMessageService, ContactMessageService>();
+        services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
         
         // ===== AI Services =====
         services.AddHttpClient<IAiService, AiService>();

@@ -137,6 +137,17 @@ public class ProjectService : IProjectService
             var package = await _packageRepository.GetByIdAsync(project.PackageId);
             if (user != null && package != null)
             {
+                // Kích hoạt/Gia hạn đặc quyền VIP 1 tháng
+                user.IsVip = true;
+                if (user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow)
+                {
+                    user.VipExpireAt = user.VipExpireAt.Value.AddMonths(1);
+                }
+                else
+                {
+                    user.VipExpireAt = DateTime.UtcNow.AddMonths(1);
+                }
+                await _userRepository.UpdateAsync(user);
                 // === EMAIL CHO KHÁCH HÀNG ===
                 if (!string.IsNullOrEmpty(user.Email))
                 {

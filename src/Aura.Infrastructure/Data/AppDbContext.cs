@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<AuraKnowledge> AuraKnowledge { get; set; }
     public DbSet<ChatLog> ChatLogs { get; set; }
+    public DbSet<DocumentTemplate> DocumentTemplates { get; set; }
     #endregion
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -208,6 +209,17 @@ public class AppDbContext : DbContext
             entity.HasKey(k => k.Id);
             entity.Property(k => k.Content).IsRequired();
             entity.Property(k => k.Embedding).HasColumnType("vector(1536)"); // 1536 for OpenAI text-embedding-3-small
+        });
+
+        // ==================== DocumentTemplate ====================
+        modelBuilder.Entity<DocumentTemplate>(entity =>
+        {
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Title).IsRequired().HasMaxLength(300);
+            entity.Property(d => d.Description).HasMaxLength(1000);
+            entity.Property(d => d.FileUrl).IsRequired().HasMaxLength(1000);
+            entity.Property(d => d.PublicId).IsRequired().HasMaxLength(500);
+            entity.Property(d => d.FileType).IsRequired().HasMaxLength(50);
         });
     }
 

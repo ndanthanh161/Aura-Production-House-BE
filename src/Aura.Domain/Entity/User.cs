@@ -12,6 +12,8 @@ namespace Aura.Domain.Entity
         public string? Bio { get; set; } // Giới thiệu bản thân
         public string? Specialization { get; set; } // Chuyên môn (ví dụ: Chụp ảnh cưới, Sự kiện)
         public bool IsActive { get; set; } = true;
+        public bool IsVip { get; set; } = false;
+        public DateTime? VipExpireAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public Role Role { get; set; } = null!;
