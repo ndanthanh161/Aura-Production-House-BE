@@ -81,40 +81,47 @@ public static class DataSeeder
         await context.SaveChangesAsync();
 
         // ==================== Seed AI Knowledge ====================
-        try
-        {
-            // Logic thông minh: Kiểm tra từng Package, nếu chưa có trong AI Knowledge thì mới nạp
-            var currentPackages = await context.Packages.ToListAsync();
-            var existingKnowledge = await context.AuraKnowledge
-                .Where(k => k.Category == "Package")
-                .Select(k => k.Content)
-                .ToListAsync();
+        // Logic thông minh: Kiểm tra từng Package, nếu chưa có trong AI Knowledge thì mới nạp
+        var currentPackages = await context.Packages.ToListAsync();
+        var existingKnowledge = await context.AuraKnowledge
+            .Where(k => k.Category == "Package")
+            .Select(k => k.Content)
+            .ToListAsync();
 
-            foreach (var pkg in currentPackages)
+        foreach (var pkg in currentPackages)
+        {
+            var benefits = string.Join(", ", pkg.Benefits);
+            var content = $"Gói dịch vụ: {pkg.Name}. Giá: {pkg.Price:N0} VNĐ. Mô tả: {pkg.Description}. Quyền lợi: {benefits}.";
+            
+            // Nếu nội dung này chưa tồn tại trong bảng AI Knowledge thì mới nạp vào
+            if (!existingKnowledge.Any(k => k.Contains($"Gói dịch vụ: {pkg.Name}")))
             {
-                var benefits = string.Join(", ", pkg.Benefits);
-                var content = $"Gói dịch vụ: {pkg.Name}. Giá: {pkg.Price:N0} VNĐ. Mô tả: {pkg.Description}. Quyền lợi: {benefits}.";
-                
-                // Nếu nội dung này chưa tồn tại trong bảng AI Knowledge thì mới nạp vào
-                if (!existingKnowledge.Any(k => k.Contains($"Gói dịch vụ: {pkg.Name}")))
+                try
                 {
                     await chatService.IngestKnowledgeAsync(content, "Package");
                 }
+                catch (Exception)
+                {
+                    // Tránh crash startup khi chưa cấu hình xong OpenAI API key hoặc lỗi mạng ngoài
+                }
             }
+        }
 
-            // Tương tự cho FAQ cơ bản
-            if (!await context.AuraKnowledge.AnyAsync(k => k.Category == "FAQ"))
+        // Tương tự cho FAQ cơ bản
+        if (!await context.AuraKnowledge.AnyAsync(k => k.Category == "FAQ"))
+        {
+            try
             {
                 await chatService.IngestKnowledgeAsync("Aura Production House tọa lạc tại Lô E2a-7, Đường D1, Đ. Võ Chí Công, Long Thạnh Mỹ, Thành Phố Thủ Đức, Hồ Chí Minh.", "FAQ");
                 await chatService.IngestKnowledgeAsync("Thời gian làm việc của Aura là từ 8:00 đến 21:00 tất cả các ngày trong tuần.", "FAQ");
                 await chatService.IngestKnowledgeAsync("Để đặt lịch, khách hàng cần thanh toán đặt cọc 50% giá trị gói dịch vụ.", "FAQ");
             }
-            await context.SaveChangesAsync();
+            catch (Exception)
+            {
+                // Tránh crash startup khi chưa cấu hình xong OpenAI API key hoặc lỗi mạng ngoài
+            }
         }
-        catch (Exception ex)
-        {
-            // Log warning but do not crash the application startup
-            Console.WriteLine($"WARNING: Failed to seed AI Knowledge on startup: {ex.Message}");
-        }
+
+        await context.SaveChangesAsync();
     }
 }
