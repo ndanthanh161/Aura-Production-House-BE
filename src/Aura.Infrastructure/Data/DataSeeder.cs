@@ -79,71 +79,6 @@ public static class DataSeeder
         }
 
         await context.SaveChangesAsync();
-        
-        // ==================== Seed Packages ====================
-        if (!await context.Packages.AnyAsync())
-        {
-            var packages = new List<Package>
-            {
-                new Package
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "CƠ BẢN",
-                    Price = 2000000,
-                    Description = "Dành cho cá nhân mới bắt đầu làm hình ảnh.",
-                    Benefits = new List<string> { "1 buổi chụp (Profile hoặc sản phẩm)", "2 video (short video)" },
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-                new Package
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "NÂNG CAO",
-                    Price = 5000000,
-                    Description = "Dành cho người muốn xây dựng thương hiệu bài bản.",
-                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "01 buổi chụp", "5 video", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa" },
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-                new Package
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "TĂNG TỐC",
-                    Price = 8000000,
-                    Description = "Dành cho shop bán hàng hoặc KOLs đang lên.",
-                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "01 Concept chụp sáng tạo", "8 Video", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Quản trị trang (Post bài/Set quảng cáo cơ bản)" },
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-                new Package
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "ĐỘT PHÁ",
-                    Price = 10000000,
-                    Description = "Tư vấn định vị thương hiệu mạnh mẽ.",
-                    Benefits = new List<string> { "Lên kế hoạch chi tiết", "1 Concept chụp sáng tạo", "12 video/tháng", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Quản trị trang (Post bài/Set quảng cáo cơ bản)", "Tư vấn định vị thương hiệu" },
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                },
-                new Package
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "CHIẾN LƯỢC",
-                    Price = 20000000,
-                    Description = "Đối tác đồng hành dài hạn và chuyên sâu.",
-                    Benefits = new List<string> { "Báo cáo hiệu quả hàng tháng", "Quản trị trang chuyên sâu", "Lên kế hoạch chi tiết", "1 Concept chụp độc quyền", "15 video/tháng", "Hỗ trợ chỉnh sửa kịch bản cá nhân hóa", "Tư vấn định vị thương hiệu" },
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                }
-            };
-            await context.Packages.AddRangeAsync(packages);
-            await context.SaveChangesAsync();
-        }
 
         // ==================== Seed AI Knowledge ====================
         // Logic thông minh: Kiểm tra từng Package, nếu chưa có trong AI Knowledge thì mới nạp
@@ -168,7 +103,7 @@ public static class DataSeeder
         // Tương tự cho FAQ cơ bản
         if (!await context.AuraKnowledge.AnyAsync(k => k.Category == "FAQ"))
         {
-            await chatService.IngestKnowledgeAsync("Aura Production House tọa lạc tại 123 Đường ABC, Quận 1, TP. Hồ Chí Minh.", "FAQ");
+            await chatService.IngestKnowledgeAsync("Aura Production House tọa lạc tại Lô E2a-7, Đường D1, Đ. Võ Chí Công, Long Thạnh Mỹ, Thành Phố Thủ Đức, Hồ Chí Minh.", "FAQ");
             await chatService.IngestKnowledgeAsync("Thời gian làm việc của Aura là từ 8:00 đến 21:00 tất cả các ngày trong tuần.", "FAQ");
             await chatService.IngestKnowledgeAsync("Để đặt lịch, khách hàng cần thanh toán đặt cọc 50% giá trị gói dịch vụ.", "FAQ");
         }
