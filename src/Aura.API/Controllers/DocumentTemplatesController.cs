@@ -52,6 +52,7 @@ namespace Aura.API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<IEnumerable<DocumentTemplateResponseDTO>>>> GetAllTemplates()
         {
             var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -96,6 +97,7 @@ namespace Aura.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<DocumentTemplateResponseDTO>>> GetTemplateById(Guid id)
         {
             var template = await _templateService.GetTemplateByIdAsync(id);
