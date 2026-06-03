@@ -126,6 +126,7 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Tax).HasColumnType("decimal(18,2)");
             entity.Property(p => p.TotalAmount).HasColumnType("decimal(18,2)");
             entity.Property(p => p.TransactionId).HasMaxLength(200);
+            entity.HasIndex(p => p.TransactionId).IsUnique();
 
             entity.Property(p => p.PaymentMethod)
                 .IsRequired()

@@ -1,6 +1,7 @@
 using Aura.Application.Common;
 using Aura.Application.DTOs.Payment;
 using Aura.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -58,19 +59,61 @@ namespace Aura.API.Controllers
             }
 
             // 3. Handle Payment
-            var result = await _projectService.HandlePaymentSuccessAsync(
-                projectId, 
-                request.TransferAmount, 
-                request.Id.ToString());
-
-            if (!result)
+            try
             {
-                Console.WriteLine($"[SePay Webhook] ERROR: HandlePaymentSuccessAsync failed for Project ID: {projectId}");
-                return NotFound(ApiResponse<object>.NotFoundResponse(ErrorMessages.ProjectNotFound));
-            }
+                var result = await _projectService.HandlePaymentSuccessAsync(
+                    projectId, 
+                    request.TransferAmount, 
+                    request.Id.ToString());
 
-            Console.WriteLine($"[SePay Webhook] SUCCESS: Project {projectId} updated to InProduction");
-            return Ok(ApiResponse<object>.SuccessResponse(new { success = true }, "Payment processed successfully."));
+                if (!result)
+                {
+                    Console.WriteLine($"[SePay Webhook] ERROR: HandlePaymentSuccessAsync failed for Project ID: {projectId}");
+                    return NotFound(ApiResponse<object>.NotFoundResponse(ErrorMessages.ProjectNotFound));
+                }
+
+                Console.WriteLine($"[SePay Webhook] SUCCESS: Project {projectId} updated to InProduction");
+                return Ok(ApiResponse<object>.SuccessResponse(new { success = true }, "Payment processed successfully."));
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"[SePay Webhook] VALIDATION ERROR: {ex.Message}");
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SePay Webhook] ERROR: {ex.Message}");
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("An unexpected error occurred."));
+            }
+        }
+
+        // POST api/v1/sepay/manual-confirm
+        [HttpPost("manual-confirm")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ManualConfirm([FromBody] ManualConfirmPaymentDTO request)
+        {
+            try
+            {
+                var result = await _projectService.HandlePaymentSuccessAsync(
+                    request.ProjectId, 
+                    request.TransferAmount, 
+                    request.TransactionId);
+
+                if (!result)
+                {
+                    return NotFound(ApiResponse<object>.NotFoundResponse("Không tìm thấy dự án hợp lệ."));
+                }
+
+                return Ok(ApiResponse<object>.SuccessResponse(new { success = true }, "Xác nhận thanh toán thủ công thành công."));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("Có lỗi xảy ra: " + ex.Message));
+            }
         }
 
         private Guid ExtractProjectId(string content)

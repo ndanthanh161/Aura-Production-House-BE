@@ -7,6 +7,9 @@ public static class PaymentMapper
 {
     public static Payment ToEntity(Project project, decimal amount, string transactionId)
     {
+        var txIdSafe = transactionId ?? string.Empty;
+        var vnTime = DateTime.UtcNow.AddHours(7); // Đồng bộ múi giờ Việt Nam (UTC+7)
+
         return new Payment
         {
             Id = Guid.NewGuid(),
@@ -15,7 +18,7 @@ public static class PaymentMapper
             Amount = amount,
             Currency = "VND",
             TotalAmount = amount,
-            OrderCode = $"AURA-{DateTime.Now:yyyyMMdd}-{transactionId.Substring(Math.Max(0, transactionId.Length - 4))}",
+            OrderCode = $"AURA-{vnTime:yyyyMMdd}-{txIdSafe.Substring(Math.Max(0, txIdSafe.Length - 4))}",
             PaymentMethod = PaymentMethod.VietQR,
             Gateway = "SePay",
             Status = PaymentStatus.Completed,

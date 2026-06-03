@@ -2,7 +2,6 @@ using Aura.Application.Common;
 using Aura.Application.DTOs.Project;
 using Aura.Application.Interfaces;
 using Aura.Application.Mappers;
-using Aura.Domain.Entity;
 using Aura.Domain.Enum;
 using Aura.Domain.Interfaces;
 
@@ -18,7 +17,7 @@ public class ProjectService : IProjectService
     private readonly IEmailTemplateService _templateService;
 
     public ProjectService(
-        IProjectRepository projectRepository, 
+        IProjectRepository projectRepository,
         IPackageRepository packageRepository,
         IUserRepository userRepository,
         IMailService mailService,
@@ -121,8 +120,21 @@ public class ProjectService : IProjectService
         var project = await _projectRepository.GetByIdAsync(projectId);
         if (project == null) return false;
 
+        if (project.Status == ProjectStatus.Completed || project.Status == ProjectStatus.Cancelled)
+        {
+            throw new ArgumentException($"Không thể thanh toán cho dự án đã ở trạng thái {project.Status}.");
+        }
+
+        if (amount < project.Revenue)
+        {
+            throw new ArgumentException($"Số tiền chuyển khoản ({amount:N0} VND) nhỏ hơn số tiền yêu cầu của gói dịch vụ ({project.Revenue:N0} VND).");
+        }
+
         var existingPayment = await _paymentRepository.GetByTransactionIdAsync(transactionId);
-        if (existingPayment != null) return true;
+        if (existingPayment != null)
+        {
+            throw new ArgumentException($"Mã giao dịch '{transactionId}' đã được sử dụng cho một thanh toán trước đó.");
+        }
 
         project.Status = ProjectStatus.InProduction;
         project.UpdatedAt = DateTime.UtcNow;
@@ -154,12 +166,12 @@ public class ProjectService : IProjectService
                     string customerSubject = $"[AURA] Xác nhận thanh toán thành công: {package.Name}";
                     string customerBody = _templateService.GetPaymentSuccessCustomerTemplate(
                         user.FullName, project.Name, package.Name, amount, transactionId);
-                    
+
                     await _mailService.SendEmailAsync(user.Email, customerSubject, customerBody);
                 }
 
                 // === EMAIL CHO ADMIN ===
-                const string adminEmail = "auraproduction21@gmail.com";
+                const string adminEmail = "auraproduction2512@gmail.com";
                 string adminSubject = $"[AURA] Đơn hàng mới - Thanh toán thành công: {project.Name}";
                 string adminBody = _templateService.GetPaymentSuccessAdminTemplate(
                     user.FullName, user.Email, project.Name, package.Name, amount, transactionId);
