@@ -12,13 +12,19 @@ namespace Aura.API.Controllers;
 [Route("api/v1/[controller]")]
 public class AuthController : ControllerBase
 {
+    private const string RefreshTokenCookieName = "aura_refresh_token";
     private readonly IAuthService _authService;
     private readonly IUserRepository _userRepository;
+    private readonly IWebHostEnvironment _environment;
 
-    public AuthController(IAuthService authService, IUserRepository userRepository)
+    public AuthController(
+        IAuthService authService,
+        IUserRepository userRepository,
+        IWebHostEnvironment environment)
     {
         _authService = authService;
         _userRepository = userRepository;
+        _environment = environment;
     }
 
     /// <summary>
@@ -42,6 +48,7 @@ public class AuthController : ControllerBase
         }
 
         var result = await _authService.RegisterAsync(request);
+        StripRefreshToken(result);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -65,6 +72,8 @@ public class AuthController : ControllerBase
         }
 
         var result = await _authService.LoginAsync(request);
+        SetRefreshTokenCookie(result.Data?.RefreshToken);
+        StripRefreshToken(result);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -83,6 +92,8 @@ public class AuthController : ControllerBase
         }
 
         var result = await _authService.GoogleLoginAsync(request.IdToken);
+        SetRefreshTokenCookie(result.Data?.RefreshToken);
+        StripRefreshToken(result);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -92,9 +103,23 @@ public class AuthController : ControllerBase
     [HttpPost("refresh-token")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? request)
     {
+        var refreshToken = request?.RefreshToken;
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            Request.Cookies.TryGetValue(RefreshTokenCookieName, out refreshToken);
+        }
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Unauthorized(ApiResponse<AuthResponse>.UnauthorizedResponse("Refresh token is missing."));
+        }
+
+        request = new RefreshTokenRequest { RefreshToken = refreshToken };
         var result = await _authService.RefreshTokenAsync(request);
+        SetRefreshTokenCookie(result.Data?.RefreshToken);
+        StripRefreshToken(result);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -116,6 +141,7 @@ public class AuthController : ControllerBase
         var accessToken = HttpContext.Request.Headers["Authorization"]
             .ToString().Replace("Bearer ", "");
         var result = await _authService.LogoutAsync(Guid.Parse(userId), accessToken);
+        ClearRefreshTokenCookie();
         return StatusCode(result.StatusCode, result);
     }
 
@@ -151,6 +177,41 @@ public class AuthController : ControllerBase
         };
 
         return Ok(ApiResponse<object>.SuccessResponse(data, "User info retrieved successfully."));
+    }
+
+    private void SetRefreshTokenCookie(string? refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return;
+        }
+
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !_environment.IsDevelopment(),
+            SameSite = _environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Expires = DateTimeOffset.UtcNow.AddDays(7),
+            Path = "/api/v1/Auth"
+        });
+    }
+
+    private void ClearRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            Secure = !_environment.IsDevelopment(),
+            SameSite = _environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Path = "/api/v1/Auth"
+        });
+    }
+
+    private static void StripRefreshToken(ApiResponse<AuthResponse> response)
+    {
+        if (response.Data != null)
+        {
+            response.Data.RefreshToken = string.Empty;
+        }
     }
 
     /// <summary>

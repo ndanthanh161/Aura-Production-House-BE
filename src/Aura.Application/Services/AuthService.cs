@@ -69,14 +69,7 @@ public class AuthService : IAuthService
         // 4. Save user
         var createdUser = await _userRepository.CreateAsync(user);
 
-        // 5. Generate tokens
-        var accessToken = _jwtTokenService.GenerateAccessToken(createdUser);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken();
-
-        // 6. Save refresh token
-        await SaveRefreshTokenAsync(createdUser.Id, refreshToken);
-
-        // 7. Build response
+        // 5. Build response without tokens. Registration requires a separate login.
         var response = new AuthResponse
         {
             UserId = createdUser.Id,
@@ -86,9 +79,9 @@ public class AuthService : IAuthService
             IsVip = createdUser.IsVip && createdUser.VipExpireAt.HasValue && createdUser.VipExpireAt.Value > DateTime.UtcNow,
             VipExpireAt = createdUser.VipExpireAt,
             Avatar = createdUser.Avatar,
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            AccessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpiration()
+            AccessToken = string.Empty,
+            RefreshToken = string.Empty,
+            AccessTokenExpiresAt = DateTime.UtcNow
         };
 
         return ApiResponse<AuthResponse>.CreatedResponse(response, "Registration successful.");
@@ -334,7 +327,7 @@ public class AuthService : IAuthService
     {
         var randomHashedPassword = _passwordHasher.HashPassword(Guid.NewGuid().ToString());
         var roleId = await GetDefaultRoleIdAsync();
-        
+
         var user = UserMapper.ToEntityFromGoogle(payload, email, roleId, randomHashedPassword);
 
 
