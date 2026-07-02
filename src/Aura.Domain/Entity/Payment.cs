@@ -11,6 +11,9 @@ namespace Aura.Domain.Entity
         public string Currency { get; set; } = "VND";
         public decimal Tax { get; set; }
         public decimal TotalAmount { get; set; }
+        public int InstallmentNumber { get; set; } = 1;
+        public decimal InstallmentPercentage { get; set; } = 100;
+        public decimal RequiredAmount { get; set; }
         public string OrderCode { get; set; } = string.Empty;
         public PaymentMethod PaymentMethod { get; set; }
         public string? Gateway { get; set; }

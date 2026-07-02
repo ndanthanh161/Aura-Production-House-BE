@@ -34,5 +34,14 @@ namespace Aura.Infrastructure.Repositories
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Payment>> GetByProjectIdAsync(Guid projectId)
+        {
+            return await _context.Payments
+                .Where(p => p.ProjectId == projectId)
+                .OrderBy(p => p.InstallmentNumber)
+                .ThenBy(p => p.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

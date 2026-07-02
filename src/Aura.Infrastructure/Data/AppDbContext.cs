@@ -125,6 +125,9 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Amount).HasColumnType("decimal(18,2)");
             entity.Property(p => p.Tax).HasColumnType("decimal(18,2)");
             entity.Property(p => p.TotalAmount).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.InstallmentNumber).HasDefaultValue(1);
+            entity.Property(p => p.InstallmentPercentage).HasColumnType("decimal(5,2)").HasDefaultValue(100m);
+            entity.Property(p => p.RequiredAmount).HasColumnType("decimal(18,2)");
             entity.Property(p => p.TransactionId).HasMaxLength(200);
             entity.HasIndex(p => p.TransactionId).IsUnique();
 

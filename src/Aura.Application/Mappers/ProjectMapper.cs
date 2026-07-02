@@ -1,4 +1,5 @@
 using Aura.Application.DTOs.Project;
+using Aura.Application.Services;
 using Aura.Domain.Entity;
 using Aura.Domain.Enum;
 
@@ -26,6 +27,14 @@ public static class ProjectMapper
 
     public static ProjectResponseDTO ToDTO(Project project)
     {
+        var completedPayments = project.Payments
+            .Where(p => p.Status == PaymentStatus.Completed)
+            .ToList();
+        var paidAmount = completedPayments.Sum(p => p.Amount);
+        var remainingAmount = Math.Max(0, project.Revenue - paidAmount);
+        var paymentPlan = PaymentPlanCalculator.BuildPlan(project.Revenue);
+        var nextInstallment = PaymentPlanCalculator.GetNextInstallment(project.Revenue, completedPayments);
+
         return new ProjectResponseDTO
         {
             Id = project.Id,
@@ -38,6 +47,12 @@ public static class ProjectMapper
             StaffName = project.Staff?.FullName,
             Status = project.Status,
             Revenue = project.Revenue,
+            PaidAmount = paidAmount,
+            RemainingAmount = remainingAmount,
+            TotalInstallments = paymentPlan.Count,
+            PaidInstallments = PaymentPlanCalculator.CountCompletedInstallments(project.Revenue, completedPayments),
+            NextInstallmentNumber = nextInstallment?.InstallmentNumber,
+            NextInstallmentAmount = nextInstallment?.Amount,
             Benefits = project.Benefits,
             Deadline = project.Deadline,
             Description = project.Description,

@@ -125,23 +125,49 @@ public class ProjectService : IProjectService
             throw new ArgumentException($"Không thể thanh toán cho dự án đã ở trạng thái {project.Status}.");
         }
 
-        if (amount < project.Revenue)
-        {
-            throw new ArgumentException($"Số tiền chuyển khoản ({amount:N0} VND) nhỏ hơn số tiền yêu cầu của gói dịch vụ ({project.Revenue:N0} VND).");
-        }
-
         var existingPayment = await _paymentRepository.GetByTransactionIdAsync(transactionId);
         if (existingPayment != null)
         {
-            throw new ArgumentException($"Mã giao dịch '{transactionId}' đã được sử dụng cho một thanh toán trước đó.");
+            throw new ArgumentException($"Transaction '{transactionId}' has already been used for another payment.");
         }
 
-        project.Status = ProjectStatus.InProduction;
-        project.UpdatedAt = DateTime.UtcNow;
-        await _projectRepository.UpdateAsync(project);
+        var projectPayments = await _paymentRepository.GetByProjectIdAsync(projectId);
+        var paidAmount = projectPayments
+            .Where(p => p.Status == PaymentStatus.Completed)
+            .Sum(p => p.Amount);
+        var remainingAmount = project.Revenue - paidAmount;
 
-        var payment = PaymentMapper.ToEntity(project, amount, transactionId);
+        if (amount <= 0)
+        {
+            throw new ArgumentException("So tien thanh toan phai lon hon 0 VND.");
+        }
+
+        if (remainingAmount <= 0)
+        {
+            throw new ArgumentException("Du an nay da duoc thanh toan du.");
+        }
+
+        if (amount > remainingAmount)
+        {
+            throw new ArgumentException($"So tien chuyen khoan ({amount:N0} VND) lon hon so tien con lai cua du an ({remainingAmount:N0} VND).");
+        }
+
+        var nextInstallment = PaymentPlanCalculator.GetNextInstallment(project.Revenue, projectPayments);
+        if (nextInstallment == null)
+        {
+            throw new ArgumentException("Du an nay da duoc thanh toan du.");
+        }
+
+        var payment = PaymentMapper.ToEntity(project, nextInstallment, amount, transactionId);
         await _paymentRepository.AddAsync(payment);
+
+        var updatedPayments = projectPayments.Append(payment);
+        if (project.Status == ProjectStatus.Scheduled || PaymentPlanCalculator.IsFullyPaid(project.Revenue, updatedPayments))
+        {
+            project.Status = ProjectStatus.InProduction;
+            project.UpdatedAt = DateTime.UtcNow;
+            await _projectRepository.UpdateAsync(project);
+        }
 
         try
         {
@@ -149,17 +175,19 @@ public class ProjectService : IProjectService
             var package = await _packageRepository.GetByIdAsync(project.PackageId);
             if (user != null && package != null)
             {
-                // Kích hoạt/Gia hạn đặc quyền VIP 1 tháng
-                user.IsVip = true;
-                if (user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow)
+                if (!projectPayments.Any(p => p.Status == PaymentStatus.Completed) && nextInstallment.InstallmentNumber == 1)
                 {
-                    user.VipExpireAt = user.VipExpireAt.Value.AddMonths(1);
+                    user.IsVip = true;
+                    if (user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow)
+                    {
+                        user.VipExpireAt = user.VipExpireAt.Value.AddMonths(1);
+                    }
+                    else
+                    {
+                        user.VipExpireAt = DateTime.UtcNow.AddMonths(1);
+                    }
+                    await _userRepository.UpdateAsync(user);
                 }
-                else
-                {
-                    user.VipExpireAt = DateTime.UtcNow.AddMonths(1);
-                }
-                await _userRepository.UpdateAsync(user);
                 // === EMAIL CHO KHÁCH HÀNG ===
                 if (!string.IsNullOrEmpty(user.Email))
                 {

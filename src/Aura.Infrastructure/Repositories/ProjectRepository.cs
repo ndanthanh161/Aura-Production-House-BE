@@ -24,12 +24,22 @@ namespace Aura.Infrastructure.Repositories
 
         public async Task<Project?> GetByIdAsync(Guid id)
         {
-            return await _context.Projects.FindAsync(id);
+            return await _context.Projects
+                .Include(p => p.Client)
+                .Include(p => p.Staff)
+                .Include(p => p.Package)
+                .Include(p => p.Payments)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<IEnumerable<Project>> GetAllAsync()
         {
-            return await _context.Projects.ToListAsync();
+            return await _context.Projects
+                .Include(p => p.Client)
+                .Include(p => p.Staff)
+                .Include(p => p.Package)
+                .Include(p => p.Payments)
+                .ToListAsync();
         }
 
         public async Task<Project> UpdateAsync(Project project)
@@ -71,6 +81,7 @@ namespace Aura.Infrastructure.Repositories
                 .Include(p => p.Client)
                 .Include(p => p.Staff)
                 .Include(p => p.Package)
+                .Include(p => p.Payments)
                 .AsQueryable();
 
             if (clientId.HasValue)

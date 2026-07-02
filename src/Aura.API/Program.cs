@@ -97,6 +97,7 @@ using (var scope = app.Services.CreateScope())
         {
             logger.LogInformation("No pending database migrations found.");
         }
+        await RepairPaymentInstallmentColumnsAsync(context, logger);
         await DataSeeder.SeedAsync(services);
     }
     catch (Exception ex)
@@ -145,3 +146,50 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 app.Run();
+
+static async Task RepairPaymentInstallmentColumnsAsync(Aura.Infrastructure.Data.AppDbContext context, ILogger logger)
+{
+    await context.Database.ExecuteSqlRawAsync("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'Payments'
+                  AND column_name = 'InstallmentNumber'
+            ) THEN
+                ALTER TABLE "Payments"
+                ADD COLUMN "InstallmentNumber" integer NOT NULL DEFAULT 1;
+            END IF;
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'Payments'
+                  AND column_name = 'InstallmentPercentage'
+            ) THEN
+                ALTER TABLE "Payments"
+                ADD COLUMN "InstallmentPercentage" numeric(5,2) NOT NULL DEFAULT 100;
+            END IF;
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'Payments'
+                  AND column_name = 'RequiredAmount'
+            ) THEN
+                ALTER TABLE "Payments"
+                ADD COLUMN "RequiredAmount" numeric(18,2) NOT NULL DEFAULT 0;
+            END IF;
+
+            UPDATE "Payments"
+            SET "RequiredAmount" = "TotalAmount"
+            WHERE "RequiredAmount" = 0;
+        END $$;
+        """);
+
+    logger.LogInformation("Payment installment columns verified.");
+}

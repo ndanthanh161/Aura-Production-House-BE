@@ -7,5 +7,6 @@ namespace Aura.Domain.Interfaces
         Task<Payment> AddAsync(Payment payment);
         Task<Payment?> GetByTransactionIdAsync(string transactionId);
         Task<IEnumerable<Payment>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<Payment>> GetByProjectIdAsync(Guid projectId);
     }
 }

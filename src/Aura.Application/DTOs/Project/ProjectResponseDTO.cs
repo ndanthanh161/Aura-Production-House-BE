@@ -15,6 +15,12 @@ namespace Aura.Application.DTOs.Project
         public string? StaffName { get; set; }
         public ProjectStatus Status { get; set; }
         public decimal Revenue { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal RemainingAmount { get; set; }
+        public int TotalInstallments { get; set; }
+        public int PaidInstallments { get; set; }
+        public int? NextInstallmentNumber { get; set; }
+        public decimal? NextInstallmentAmount { get; set; }
         public DateTime Deadline { get; set; }
         public string? Description { get; set; }
         public string? ResultLink { get; set; }
