@@ -31,7 +31,9 @@ namespace Aura.Infrastructure.Services
             using var stream = file.OpenReadStream();
             
             var extension = System.IO.Path.GetExtension(file.FileName).ToLower();
-            var isRaw = extension == ".pdf" || extension == ".docx" || extension == ".doc";
+            var isRaw = extension == ".pdf" || extension == ".docx" || extension == ".doc" ||
+                        extension == ".xls" || extension == ".xlsx" || extension == ".csv" ||
+                        extension == ".ods";
             var isVideo = file.ContentType.StartsWith("video/");
 
             if (isRaw)

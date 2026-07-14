@@ -37,9 +37,12 @@ namespace Aura.API.Controllers
                 }
 
                 var extension = System.IO.Path.GetExtension(request.File.FileName).ToLower();
-                if (extension != ".pdf" && extension != ".docx" && extension != ".doc")
+                if (extension != ".pdf" && extension != ".docx" && extension != ".doc" &&
+                    extension != ".xls" && extension != ".xlsx" && extension != ".csv" &&
+                    extension != ".ods")
                 {
-                    return BadRequest(ApiResponse<DocumentTemplateResponseDTO>.ErrorResponse("Định dạng file không hỗ trợ. Chỉ hỗ trợ .doc, .docx và .pdf"));
+                    return BadRequest(ApiResponse<DocumentTemplateResponseDTO>.ErrorResponse(
+                        "Định dạng file không hỗ trợ. Chỉ hỗ trợ .doc, .docx, .pdf, .xls, .xlsx, .csv và .ods"));
                 }
 
                 var result = await _templateService.CreateTemplateAsync(request);
