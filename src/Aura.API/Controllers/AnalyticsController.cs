@@ -49,17 +49,26 @@ public class AnalyticsController : ControllerBase
             .Where(payment => payment.CreatedAt >= firstDayLastMonth && payment.CreatedAt < firstDayThisMonth)
             .SumAsync(payment => (decimal?)payment.Amount) ?? 0;
 
-        var totalProjects = await _context.Projects.AsNoTracking().CountAsync();
-        var projectsScheduled = await _context.Projects.AsNoTracking().CountAsync(project => project.Status == ProjectStatus.Scheduled);
-        var projectsInProduction = await _context.Projects.AsNoTracking().CountAsync(project => project.Status == ProjectStatus.InProduction);
-        var projectsCompleted = await _context.Projects.AsNoTracking().CountAsync(project => project.Status == ProjectStatus.Completed);
-        var projectsCancelled = await _context.Projects.AsNoTracking().CountAsync(project => project.Status == ProjectStatus.Cancelled);
-        var paidProjects = await completedPayments.Select(payment => payment.ProjectId).Distinct().CountAsync();
-        var awaitingPaymentProjects = await _context.Projects.AsNoTracking().CountAsync(project =>
+        var operationalProjects = _context.Projects.AsNoTracking()
+            .Where(project =>
+                !EF.Functions.ILike(project.Name, "%membership%") &&
+                !EF.Functions.ILike(project.Name, "%hội viên%") &&
+                !EF.Functions.ILike(project.Package.Name, "%membership%") &&
+                !EF.Functions.ILike(project.Package.Name, "%hội viên%"));
+
+        var totalProjects = await operationalProjects.CountAsync();
+        var projectsScheduled = await operationalProjects.CountAsync(project => project.Status == ProjectStatus.Scheduled);
+        var projectsInProduction = await operationalProjects.CountAsync(project => project.Status == ProjectStatus.InProduction);
+        var projectsCompleted = await operationalProjects.CountAsync(project => project.Status == ProjectStatus.Completed);
+        var projectsCancelled = await operationalProjects.CountAsync(project => project.Status == ProjectStatus.Cancelled);
+        var paidProjects = await completedPayments
+            .Where(payment => operationalProjects.Any(project => project.Id == payment.ProjectId))
+            .Select(payment => payment.ProjectId).Distinct().CountAsync();
+        var awaitingPaymentProjects = await operationalProjects.CountAsync(project =>
             project.Status != ProjectStatus.Cancelled &&
             (project.Payments.Where(payment => payment.Status == PaymentStatus.Completed)
                 .Sum(payment => (decimal?)payment.Amount) ?? 0) < project.Revenue);
-        var outstandingAmount = await _context.Projects.AsNoTracking()
+        var outstandingAmount = await operationalProjects
             .Where(project => project.Status != ProjectStatus.Cancelled)
             .Select(project => project.Revenue - (project.Payments
                 .Where(payment => payment.Status == PaymentStatus.Completed)
@@ -236,8 +245,8 @@ public class AnalyticsController : ControllerBase
             RevenueByPackage = revenueByPackage,
             ProjectsByCategory = projectsByPackage,
             TotalBookings = totalProjects - projectsCancelled,
-            BookingsThisMonth = await _context.Projects.AsNoTracking().CountAsync(project => project.CreatedAt >= firstDayThisMonth && project.CreatedAt <= now),
-            CancelledThisMonth = await _context.Projects.AsNoTracking().CountAsync(project => project.Status == ProjectStatus.Cancelled && project.UpdatedAt >= firstDayThisMonth && project.UpdatedAt <= now),
+            BookingsThisMonth = await operationalProjects.CountAsync(project => project.CreatedAt >= firstDayThisMonth && project.CreatedAt <= now),
+            CancelledThisMonth = await operationalProjects.CountAsync(project => project.Status == ProjectStatus.Cancelled && project.UpdatedAt >= firstDayThisMonth && project.UpdatedAt <= now),
             TotalActivePackages = await _context.Packages.AsNoTracking().CountAsync(package => package.IsActive),
             GeneratedAt = now
         };
