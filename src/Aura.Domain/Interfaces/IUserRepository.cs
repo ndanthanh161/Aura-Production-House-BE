@@ -14,6 +14,7 @@ namespace Aura.Domain.Interfaces
 
         /// <summary>Cập nhật thông tin user</summary>
         Task<User> UpdateAsync(User user);
+        Task<User?> TryClaimFreeMembershipAsync(Guid userId, DateTime claimedAt);
 
         /// <summary>Vô hiệu hóa user (Soft Delete)</summary>
         Task<bool> DeactivateAsync(Guid id);

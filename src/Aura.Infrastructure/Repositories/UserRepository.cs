@@ -57,6 +57,25 @@ public class UserRepository : IUserRepository
         return (await GetByIdAsync(user.Id))!;
     }
 
+    public async Task<User?> TryClaimFreeMembershipAsync(Guid userId, DateTime claimedAt)
+    {
+        var expiresAt = claimedAt.AddMonths(1);
+        var affectedRows = await _context.Users
+            .Where(u => u.Id == userId && u.IsActive && !u.HasClaimedFreeMembership)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.HasClaimedFreeMembership, true)
+                .SetProperty(u => u.FreeMembershipClaimedAt, claimedAt)
+                .SetProperty(u => u.IsVip, true)
+                .SetProperty(
+                    u => u.VipExpireAt,
+                    u => u.VipExpireAt.HasValue && u.VipExpireAt.Value > claimedAt
+                        ? u.VipExpireAt.Value.AddMonths(1)
+                        : expiresAt)
+                .SetProperty(u => u.UpdatedAt, claimedAt));
+
+        return affectedRows == 1 ? await GetByIdAsync(userId) : null;
+    }
+
     public async Task<bool> DeactivateAsync(Guid id)
     {
         var user = await _context.Users.FindAsync(id);

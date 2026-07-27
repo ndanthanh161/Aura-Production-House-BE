@@ -175,7 +175,11 @@ public class ProjectService : IProjectService
             var package = await _packageRepository.GetByIdAsync(project.PackageId);
             if (user != null && package != null)
             {
-                if (!projectPayments.Any(p => p.Status == PaymentStatus.Completed) && nextInstallment.InstallmentNumber == 1)
+                var isMembershipPackage = package.Name.Trim()
+                    .Equals("Membership", StringComparison.OrdinalIgnoreCase);
+                if (isMembershipPackage &&
+                    !projectPayments.Any(p => p.Status == PaymentStatus.Completed) &&
+                    nextInstallment.InstallmentNumber == 1)
                 {
                     user.IsVip = true;
                     if (user.VipExpireAt.HasValue && user.VipExpireAt.Value > DateTime.UtcNow)

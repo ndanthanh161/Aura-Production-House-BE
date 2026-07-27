@@ -11,6 +11,7 @@ public static class DependencyInjection
         // ===== Business Services =====
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPackageService, PackageService>();
+        services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IPhotographerService, PhotographerService>();
         services.AddScoped<ICustomerService, CustomerService>();

@@ -14,6 +14,8 @@ namespace Aura.Domain.Entity
         public bool IsActive { get; set; } = true;
         public bool IsVip { get; set; } = false;
         public DateTime? VipExpireAt { get; set; }
+        public bool HasClaimedFreeMembership { get; set; } = false;
+        public DateTime? FreeMembershipClaimedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public Role Role { get; set; } = null!;
