@@ -15,6 +15,7 @@ public static class PackageMapper
             Description = request.Description,
             Benefits = request.Benefits,
             IsPopular = request.IsPopular,
+            IsFreeMembershipOfferEnabled = request.IsFreeMembershipOfferEnabled,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -32,6 +33,7 @@ public static class PackageMapper
             Benefits = package.Benefits,
             IsPopular = package.IsPopular,
             IsActive = package.IsActive,
+            IsFreeMembershipOfferEnabled = package.IsFreeMembershipOfferEnabled,
             CreatedAt = package.CreatedAt,
             UpdatedAt = package.UpdatedAt
         };
@@ -45,6 +47,7 @@ public static class PackageMapper
         package.Benefits = request.Benefits;
         package.IsPopular = request.IsPopular;
         package.IsActive = request.IsActive;
+        package.IsFreeMembershipOfferEnabled = request.IsFreeMembershipOfferEnabled;
         package.UpdatedAt = DateTime.UtcNow;
     }
 }

@@ -26,19 +26,25 @@ public class MembershipService : IMembershipService
             return ApiResponse<MembershipOfferDTO>.NotFoundResponse("Không tìm thấy tài khoản.");
         }
 
-        return ApiResponse<MembershipOfferDTO>.SuccessResponse(ToOffer(user));
+        var membershipPackage = await GetMembershipPackageAsync();
+        var isOfferEnabled = membershipPackage?.IsFreeMembershipOfferEnabled == true;
+        return ApiResponse<MembershipOfferDTO>.SuccessResponse(ToOffer(user, isOfferEnabled));
     }
 
     public async Task<ApiResponse<MembershipOfferDTO>> ClaimWelcomeOfferAsync(Guid userId)
     {
-        var membershipPackage = (await _packageRepository.GetAllAsync())
-            .FirstOrDefault(package =>
-                package.Name.Trim().Equals("Membership", StringComparison.OrdinalIgnoreCase));
+        var membershipPackage = await GetMembershipPackageAsync();
 
         if (membershipPackage == null)
         {
             return ApiResponse<MembershipOfferDTO>.NotFoundResponse(
                 "Gói Membership hiện không khả dụng.");
+        }
+
+        if (!membershipPackage.IsFreeMembershipOfferEnabled)
+        {
+            return ApiResponse<MembershipOfferDTO>.ForbiddenResponse(
+                "Chương trình Membership miễn phí hiện đang tạm dừng.");
         }
 
         var claimedAt = DateTime.UtcNow;
@@ -63,16 +69,24 @@ public class MembershipService : IMembershipService
         }
 
         return ApiResponse<MembershipOfferDTO>.SuccessResponse(
-            ToOffer(user),
+            ToOffer(user, true),
             "Đã kích hoạt Membership miễn phí trong 1 tháng.");
     }
 
-    private static MembershipOfferDTO ToOffer(Aura.Domain.Entity.User user)
+    private async Task<Aura.Domain.Entity.Package?> GetMembershipPackageAsync()
+    {
+        return (await _packageRepository.GetAllAsync())
+            .FirstOrDefault(package =>
+                package.Name.Trim().Equals("Membership", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static MembershipOfferDTO ToOffer(Aura.Domain.Entity.User user, bool isOfferEnabled)
     {
         var now = DateTime.UtcNow;
         return new MembershipOfferDTO
         {
-            IsEligible = user.IsActive && !user.HasClaimedFreeMembership,
+            IsEligible = isOfferEnabled && user.IsActive && !user.HasClaimedFreeMembership,
+            IsOfferEnabled = isOfferEnabled,
             HasClaimed = user.HasClaimedFreeMembership,
             IsActive = user.IsActive && user.IsVip &&
                        user.VipExpireAt.HasValue && user.VipExpireAt.Value > now,

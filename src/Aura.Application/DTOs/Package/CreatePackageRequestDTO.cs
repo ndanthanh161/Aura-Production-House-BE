@@ -12,6 +12,7 @@ namespace Aura.Application.DTOs.Package
         public List<string> Benefits { get; set; } = new List<string>();
 
         public bool IsPopular { get; set; }
+        public bool IsFreeMembershipOfferEnabled { get; set; }
     }
 }
 

@@ -183,6 +183,9 @@ namespace Aura.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsFreeMembershipOfferEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsPopular")
                         .HasColumnType("boolean");
 

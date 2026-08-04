@@ -14,6 +14,7 @@ namespace Aura.Application.DTOs.Package
 
         public bool IsPopular { get; set; }
         public bool IsActive { get; set; }
+        public bool IsFreeMembershipOfferEnabled { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

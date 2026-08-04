@@ -15,6 +15,7 @@ namespace Aura.Domain.Entity
 
         public bool IsPopular { get; set; }
         public bool IsActive { get; set; }
+        public bool IsFreeMembershipOfferEnabled { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public ICollection<Project> Projects { get; set; } = new List<Project>();
